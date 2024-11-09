@@ -1,0 +1,1 @@
+UPDATE usertable SET bio = $1 WHERE id = $2;

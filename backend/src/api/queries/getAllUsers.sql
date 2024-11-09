@@ -1,0 +1,11 @@
+select
+    id,
+    first_name,
+    last_name,
+    username,
+    email,
+    gender,
+    is_email_verified,
+    joined_at
+from
+    usertable;
