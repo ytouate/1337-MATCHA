@@ -30,7 +30,7 @@ export const Navbar = ({
               setTheme(theme == "dark" ? "light" : "dark");
             }}
             variant={"ghost"}
-            className="focus:bg-primary hover:bg-primary cursor-pointer rounded-lg  focus:outline-none focus:ring-4 focus:ring-white focus:text-white"
+            className={`focus:bg-primary hover:bg-primary cursor-pointer rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:text-white`}
           >
             {theme === "light" ? <Moon /> : <Sun />}
           </Button>
