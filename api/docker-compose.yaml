@@ -23,6 +23,14 @@ services:
       - 5431:5432
     volumes:
       - match_db:/var/lib/postgresql/data
+  my-adminer:
+    image: adminer:latest
+    container_name: my-adminer
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+
 
 volumes:
   match_db:
