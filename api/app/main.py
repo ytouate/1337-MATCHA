@@ -12,7 +12,7 @@ app = FastAPI()
 
 @app.on_event("startup")
 async def on_startup():
-    query = create_table('user', [
+    query = create_table('users', [
         {
             "name": 'id',
             "type": {

@@ -1,9 +1,3 @@
--- Create the database
-CREATE DATABASE matcha;
-
--- Connect to the database
-\c matcha;
-
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
     first_name VARCHAR(28) NOT NULL CHECK (first_name <> ''),
