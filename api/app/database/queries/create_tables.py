@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List
+from ..database import PgDatabase
 
 class Type(BaseModel):
     type: str
@@ -12,108 +13,57 @@ class Column(BaseModel):
     is_blank: bool = False
     is_primary: bool = False
     default: Optional[str] = None
+def setType(name: str, type: Type) -> str:
+    if type.type != 'ENUM':
+        return type.type
+    # If type is ENUM, create ENUM types
+    query = f"CREATE TYPE {name}_type AS ENUM ({', '.join([repr(e) for e in type.enum])});"
+    with PgDatabase() as db:
+        db.cursor.execute(query)
+        db.connection.commit()
+    return f"{name}_type"
+
+def table_exist(name: str) -> bool:
+    query = """
+    SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_name = %s
+          AND table_schema = 'public'  -- Ensure you're checking the public schema
+    );
+    """
+    with PgDatabase() as db:
+        db.cursor.execute(query, (name,))
+        result = db.cursor.fetchone()
+        print(f"Table is_exist: {result[0]}")
+        return result[0]
 
 def create_table(name: str, columns: List[Column]) -> str:
-    lines = []
-    for column in columns:
-        line = (
-            f"{column.name} "
-            f"{column.type.type if not column.is_autoinc else ''} "
-            f"{f'CHECK ({column.name} IN ({', '.join(column.type.enum)})' if column.type.enum else ''} "
-            f"{'NOT NULL' if not column.is_null else ''} "
-            f"{f'CHECK ({column.name} <> \'\')' if column.is_blank else ''} "
-            f"{f'DEFAULT {column.default}' if column.default else ''} "
-            f"{'PRIMARY KEY' if not column.is_primary else ''} "
-        )
-        lines.append(line.strip())
-    columns_definition = ",\n".join(lines)
-    query = f"CREATE TABLE {name} (\n{columns_definition}\n);"
-    return query
+    try:
+        if not table_exist(name):
+            lines = []
+            for column in columns:
+                type_column = setType(column.name, column.type)
+                column_definition = f"{column.name} {type_column}"
+                if not column.is_null:
+                    column_definition += " NOT NULL"
+                if column.is_blank:
+                    column_definition += f" CHECK ({column.name} <> '')"
+                if column.default:
+                    column_definition += f" DEFAULT {repr(column.default)}"
+                if column.is_primary:
+                    column_definition += " PRIMARY KEY"
+                lines.append(column_definition.strip())
 
-query = create_table(User, [
-    {
-        name : 'id',
-        type : {
-            type : 'SERIAL',
-        },
-    },
-    {
-        name : 'first_name',
-        type : {
-            type : 'VARCHAR(28)',
-        },
-        is_null : True,
-        is_blank : True,
-    },
-    {
-        name : 'last_name',
-        type : {
-            type : 'VARCHAR(28)',
-        },
-        is_null : True,
-        is_blank : True,
-    },
-    {
-        name : 'email',
-        type : {
-            type : 'VARCHAR(255)',
-        },
-        is_null : True,
-        is_blank : True,
-        is_primary : True
-    },
-    {
-        name : 'username',
-        type : {
-            type : 'VARCHAR(16)',
-        },
-        is_null : True,
-        is_blank : True,
-        is_primary : True
-    },
-    {
-        name : 'bio',
-        type : {
-            type : 'VARCHAR(16)',
-        },
-    },
-    {
-        name : 'latitude',
-        type : {
-            type : 'DECIMAL(9, 6)',
-        },
-    },
-    {
-        name : 'longitude',
-        type : {
-            type : 'DECIMAL(9, 6)',
-        },
-    },
-     {
-        name : 'longitude',
-        type : {
-            type : 'DECIMAL(9, 6)',
-        },
-    },
-    {
-        name : 'is_verified',
-        type : {
-            type : 'BOOLEAN',
-        },
-        default : 'FALSE',
-    },
-    {
-        name : 'created_at',
-        type : {
-            type : 'TIMESTAMP',
-        },
-        default : 'CURRENT_TIMESTAMP',
-    },
-    {
-        name : 'updated_at',
-        type : {
-            type : 'TIMESTAMP',
-        },
-        default : 'CURRENT_TIMESTAMP',
-    },
-])
+            columns_definition = ",\n".join(lines)
+            query = f"CREATE TABLE {name} (\n{columns_definition}\n);"
+            
+            with PgDatabase() as db:
+                db.cursor.execute(query)
+                db.connection.commit()
+            return queryg
+        else:
+            raise ValueError(f"Table '{name}' already exists")
+    except Exception as e:
+        print(f"Error: {e}")
+        return str(e)
