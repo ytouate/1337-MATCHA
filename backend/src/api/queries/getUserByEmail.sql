@@ -1,1 +1,0 @@
-SELECT * FROM UserTable WHERE email = $1;

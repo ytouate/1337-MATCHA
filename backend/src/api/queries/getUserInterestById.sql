@@ -1,1 +1,0 @@
-SELECT * FROM userinterests WHERE user_id = $1 AND interest = $2;
