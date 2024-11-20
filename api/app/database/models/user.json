@@ -1,0 +1,100 @@
+[
+    {
+        "name": "id",
+        "type": {
+            "type": "SERIAL"
+        },
+        "is_primary": true
+    },
+    {
+        "name": "first_name",
+        "type": {
+            "type": "VARCHAR(28)"
+        },
+        "is_null": true,
+        "is_blank": true
+    },
+    {
+        "name": "last_name",
+        "type": {
+            "type": "VARCHAR(28)"
+        },
+        "is_null": true,
+        "is_blank": true
+    },
+    {
+        "name": "email",
+        "type": {
+            "type": "VARCHAR(255)"
+        },
+        "is_null": true,
+        "is_blank": true
+    },
+    {
+        "name": "username",
+        "type": {
+            "type": "VARCHAR(16)"
+        },
+        "is_null": true,
+        "is_blank": true
+    },
+    {
+        "name": "bio",
+        "type": {
+            "type": "VARCHAR(255)"
+        }
+    },
+    {
+        "name": "latitude",
+        "type": {
+            "type": "DECIMAL(9, 6)"
+        }
+    },
+    {
+        "name": "longitude",
+        "type": {
+            "type": "DECIMAL(9, 6)"
+        }
+    },
+    {
+        "name": "is_verified",
+        "type": {
+            "type": "BOOLEAN"
+        },
+        "default": "FALSE"
+    },
+    {
+        "name": "gender",
+        "type": {
+            "type": "ENUM",
+            "enum": [
+                "'Male'",
+                "'Female'"
+            ]
+        }
+    },
+    {
+        "name": "sexual_preference",
+        "type": {
+            "type": "ENUM",
+            "enum": [
+                "Male",
+                "Female"
+            ]
+        }
+    },
+    {
+        "name": "created_at",
+        "type": {
+            "type": "TIMESTAMP"
+        },
+        "default": "CURRENT_TIMESTAMP"
+    },
+    {
+        "name": "updated_at",
+        "type": {
+            "type": "TIMESTAMP"
+        },
+        "default": "CURRENT_TIMESTAMP"
+    }
+]

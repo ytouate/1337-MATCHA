@@ -1,52 +1,53 @@
-from pydantic import BaseModel
-from typing import Optional, List
+from typing import List
 from ..database import PgDatabase
+from ...helpers.schemas import Column
 
 
-class Type(BaseModel):
-    type: str
-    enum: Optional[List[str]] = None
+def get_type(name: str, type: dict) -> str:
+    if type["type"] != "ENUM":
+        return type["type"]
 
+    check_query = f"""
+        SELECT 1
+        FROM pg_type
+        JOIN pg_namespace ON pg_namespace.oid = pg_type.typnamespace
+        WHERE typname = 't_{name}' AND nspname = 'public';
+    """
 
-class Column(BaseModel):
-    name: str
-    type: Type
-    is_null: bool = False
-    is_blank: bool = False
-    is_primary: bool = False
-    default: Optional[str] = None
+    create_query = f"""
+        CREATE TYPE t_{name} AS ENUM ({', '.join([f"'{e}'" for e in type['enum']])});
+    """
 
-
-def get_type(name: str, type: Type) -> str:
-    if type.type != "ENUM":
-        return type.type
-
-    query = f"CREATE TYPE t_{name} AS ENUM ({', '.join([str(e) for e in type.enum])});"
     with PgDatabase() as db:
-        db.cursor.execute(query)
-        db.connection.commit()
+        db.cursor.execute(check_query)
+        exists = db.cursor.fetchone()
+
+        if not exists:
+            db.cursor.execute(create_query)
+            db.connection.commit()
+
     return f"t_{name}"
 
 
 def generate_column_definitions(columns):
     def build_column_definition(column):
-        type_column = get_type(column.name, column.type)
+        type_column = get_type(column["name"], column["type"])
 
-        # List of conditions and corresponding constraints
         constraints = [
-            ("NOT NULL", not column.is_null),
-            (f"CHECK ({column.name} <> '')", column.is_blank),
-            (f"DEFAULT {repr(column.default)}", column.default is not None),
-            ("PRIMARY KEY", column.is_primary),
+            ("NOT NULL", not column.get("is_null", False)),
+            (f"CHECK ({column['name']} <> '')", column.get("is_blank", False)),
+            (
+                f"DEFAULT {str(column.get("default", None))}",
+                column.get("default", None) is not None,
+            ),
+            ("PRIMARY KEY", column.get("is_primary", False)),
         ]
 
-        # Filter constraints based on conditions
         applied_constraints = [
             constraint for constraint, condition in constraints if condition
         ]
 
-        # Combine the type and constraints
-        return f"{column.name} {type_column} {' '.join(applied_constraints)}"
+        return f"{column['name']} {type_column} {' '.join(applied_constraints)}"
 
     return [build_column_definition(column) for column in columns]
 
@@ -54,7 +55,7 @@ def generate_column_definitions(columns):
 def create_table(name: str, columns: List[Column]) -> str:
     try:
         columns_definition = generate_column_definitions(columns=columns)
-        query = f"CREATE TABLE {name} (\n{columns_definition}\n);"
+        query = f"CREATE TABLE {name} (\n{",".join(columns_definition)}\n);"
         with PgDatabase() as db:
             db.cursor.execute(query)
             db.connection.commit()
