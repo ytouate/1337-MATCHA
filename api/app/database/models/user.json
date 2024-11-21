@@ -77,26 +77,20 @@
         "name": "gender",
         "type": {
             "type": "ENUM",
-            "enum": {
-                "name": "gender",
-                "value": [
-                    "'Male'",
-                    "'Female'"
-                ]
-            }
+            "enum": [
+                "'Male'",
+                "'Female'"
+            ]
         }
     },
     {
         "name": "sexual_preference",
         "type": {
             "type": "ENUM",
-            "enum": {
-                "name": "gender",
-                "value": [
-                    "'Male'",
-                    "'Female'"
-                ]
-            }
+            "enum": [
+                "'Male'",
+                "'Female'"
+            ]
         }
     },
     {
@@ -119,5 +113,4 @@
         },
         "default": "CURRENT_TIMESTAMP"
     }
-
 ]

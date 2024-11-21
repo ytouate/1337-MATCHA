@@ -8,6 +8,10 @@ class Gender(Enum):
     MALE = "Male"
     FEMALE = "female"
 
+class SexualPreference(Enum):
+    MALE = "Male"
+    FEMALE = "female"
+
 
 class SignupData(BaseModel):
     first_name: str = Field(
@@ -19,7 +23,7 @@ class SignupData(BaseModel):
     username: str = Field(pattern="^[a-z][a-z0-9._]*$", min_length=3, max_length=28)
     email: EmailStr
     password: str = Field(min_length=8)
-    gender: Gender = Field(...)
+    gender: Gender
     birthdate: date = Field()
 
 
@@ -31,7 +35,7 @@ class User(BaseModel):
     gender: Gender
     bio: str
     password: str
-    sexual_preference: Gender
+    sexual_preference: SexualPreference
     latitude: float
     aptitude: float
     birthdate: date
@@ -40,14 +44,9 @@ class User(BaseModel):
     updated_at: datetime
 
 
-class Enum(BaseModel):
-    name: str
-    value: Optional[List[str]] = None
-
-
 class Type(BaseModel):
     type: str
-    enum: Enum
+    enum: Optional[List[str]] = None
 
 
 class Column(BaseModel):

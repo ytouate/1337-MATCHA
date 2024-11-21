@@ -15,14 +15,14 @@ def get_type(name, type: dict) -> str:
     """
 
     create_query = f"""
-        CREATE TYPE t_{name} AS ENUM ({', '.join([f"{e}" for e in type['enum'].get("value", [])])});
+        CREATE TYPE t_{name} AS ENUM ({', '.join([f"{e}" for e in type.get("enum", [])])});
     """
 
     exists = run_query(query=check_query, commit=False)
     if not exists:
         run_query(create_query)
 
-    return f"t_{type['enum'].get("name", "")}"
+    return f"t_{name}"
 
 
 def generate_column_definitions(columns):

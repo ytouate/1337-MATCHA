@@ -1,50 +1,31 @@
 from fastapi import FastAPI
 import dotenv
 from pathlib import Path
-from .database.queries.create_tables import create_table
-from .database.queries.create_row import create_row
-import json
-from .helpers.schemas import SignupData
-from .helpers.db import check_exist
-from fastapi.responses import JSONResponse
-from passlib.context import CryptContext
+from .routers.routes import router
+from os import environ
+
+# from .helpers.send_mail import send_email_async
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 dotenv.load_dotenv(BASE_DIR / ".env")
 
 
-def get_table_data():
-    with open("./app/database/models/user.json") as file:
-        table_data = json.load(file)
-    create_table("users", table_data)
-
-
-# get_table_data()
-
+# data = get_table_data(table_name="users", file_path="./app/database/models/user.json")
 
 app = FastAPI()
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+app.include_router(router)
 
+print("=======================================")
+print(
+    environ.get("MAIL_USERNAME"),
+    environ.get("MAIL_PASSWORD"),
+    environ.get("MAIL_FROM"),
+    environ.get("MAIL_PORT"),
+    environ.get("MAIL_SERVER"),
+    environ.get("MAIL_FROM_NAME"),
+)
+print("=======================================")
 
-@app.post("/signup")
-async def signup(payload: SignupData):
-    if not (
-        check_exist("users", "email", payload.email)
-        or check_exist("users", "username", payload.username)
-    ):
-        return JSONResponse(
-            status_code=400,
-            content={
-                "error": "Bad Request",
-                "message": "Email or Username already exists.",
-            },
-        )
-    data = dict(payload)
-    data["password"] = pwd_context.hash(data["password"])
-    data["gender"] = data["gender"].value
-    create_row("users", data)
-    return JSONResponse(
-        status_code=201, content={"message": "User successfully registered."}
-    )
+# send_email_async(subject="hello", email_to="tehsusrhist@gmail.com")
