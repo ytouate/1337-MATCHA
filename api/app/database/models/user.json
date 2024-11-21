@@ -9,34 +9,44 @@
     {
         "name": "first_name",
         "type": {
-            "type": "VARCHAR(28)"
+            "type": "VARCHAR(64)"
         },
-        "is_null": true,
-        "is_blank": true
+        "is_null": false,
+        "is_blank": false
     },
     {
         "name": "last_name",
         "type": {
-            "type": "VARCHAR(28)"
+            "type": "VARCHAR(64)"
         },
-        "is_null": true,
-        "is_blank": true
+        "is_null": false,
+        "is_blank": false
     },
     {
         "name": "email",
         "type": {
             "type": "VARCHAR(255)"
         },
-        "is_null": true,
-        "is_blank": true
+        "is_null": false,
+        "is_blank": false,
+        "is_unique": true
+    },
+    {
+        "name": "password",
+        "type": {
+            "type": "VARCHAR(255)"
+        },
+        "is_null": false,
+        "is_blank": false
     },
     {
         "name": "username",
         "type": {
-            "type": "VARCHAR(16)"
+            "type": "VARCHAR(64)"
         },
-        "is_null": true,
-        "is_blank": true
+        "is_null": false,
+        "is_blank": false,
+        "is_unique": true
     },
     {
         "name": "bio",
@@ -78,9 +88,15 @@
         "type": {
             "type": "ENUM",
             "enum": [
-                "Male",
-                "Female"
+                "'Male'",
+                "'Female'"
             ]
+        }
+    },
+    {
+        "name": "birthdate",
+        "type": {
+            "type": "DATE"
         }
     },
     {

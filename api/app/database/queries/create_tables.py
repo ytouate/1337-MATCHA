@@ -1,9 +1,9 @@
 from typing import List
-from ..database import PgDatabase
 from ...helpers.schemas import Column
+from ...helpers.db import run_query
 
 
-def get_type(name: str, type: dict) -> str:
+def get_type(name, type: dict) -> str:
     if type["type"] != "ENUM":
         return type["type"]
 
@@ -15,16 +15,12 @@ def get_type(name: str, type: dict) -> str:
     """
 
     create_query = f"""
-        CREATE TYPE t_{name} AS ENUM ({', '.join([f"'{e}'" for e in type['enum']])});
+        CREATE TYPE t_{name} AS ENUM ({', '.join([f"{e}" for e in type.get("enum", [])])});
     """
 
-    with PgDatabase() as db:
-        db.cursor.execute(check_query)
-        exists = db.cursor.fetchone()
-
-        if not exists:
-            db.cursor.execute(create_query)
-            db.connection.commit()
+    exists = run_query(query=check_query, commit=False)
+    if not exists:
+        run_query(create_query)
 
     return f"t_{name}"
 
@@ -34,13 +30,14 @@ def generate_column_definitions(columns):
         type_column = get_type(column["name"], column["type"])
 
         constraints = [
-            ("NOT NULL", not column.get("is_null", False)),
-            (f"CHECK ({column['name']} <> '')", column.get("is_blank", False)),
+            ("NOT NULL", not column.get("is_null", True)),
+            (f"CHECK ({column['name']} <> '')", not column.get("is_blank", True)),
             (
                 f"DEFAULT {str(column.get("default", None))}",
                 column.get("default", None) is not None,
             ),
             ("PRIMARY KEY", column.get("is_primary", False)),
+            ("UNIQUE", column.get("is_unique", False)),
         ]
 
         applied_constraints = [
@@ -52,14 +49,7 @@ def generate_column_definitions(columns):
     return [build_column_definition(column) for column in columns]
 
 
-def create_table(name: str, columns: List[Column]) -> str:
-    try:
-        columns_definition = generate_column_definitions(columns=columns)
-        query = f"CREATE TABLE {name} (\n{",".join(columns_definition)}\n);"
-        with PgDatabase() as db:
-            db.cursor.execute(query)
-            db.connection.commit()
-        return query
-    except Exception as e:
-        print(f"Error: {e}")
-        return str(e)
+def create_table(name: str, columns: List[Column]):
+    columns_definition = generate_column_definitions(columns=columns)
+    query = f"CREATE TABLE {name} (\n{",".join(columns_definition)}\n);"
+    run_query(query)

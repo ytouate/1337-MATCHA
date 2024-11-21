@@ -1,6 +1,30 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, EmailStr
 from datetime import date, datetime
 from typing import Optional, List
+from enum import Enum
+
+
+class Gender(Enum):
+    MALE = "Male"
+    FEMALE = "female"
+
+class SexualPreference(Enum):
+    MALE = "Male"
+    FEMALE = "female"
+
+
+class SignupData(BaseModel):
+    first_name: str = Field(
+        pattern="^[a-zA-Z]+(?: [a-zA-Z]+)*$", min_length=3, max_length=28
+    )
+    last_name: str = Field(
+        pattern="^[a-zA-Z]+(?: [a-zA-Z]+)*$", min_length=3, max_length=28
+    )
+    username: str = Field(pattern="^[a-z][a-z0-9._]*$", min_length=3, max_length=28)
+    email: EmailStr
+    password: str = Field(min_length=8)
+    gender: Gender
+    birthdate: date = Field()
 
 
 class User(BaseModel):
@@ -8,10 +32,10 @@ class User(BaseModel):
     last_name: str
     username: str
     email: str
-    gender: str
+    gender: Gender
     bio: str
     password: str
-    sexual_preference: str
+    sexual_preference: SexualPreference
     latitude: float
     aptitude: float
     birthdate: date
