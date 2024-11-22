@@ -14,10 +14,8 @@ conf = ConnectionConfig(
     MAIL_FROM=os.getenv("EMAIL_HOST_USER"),
     MAIL_PORT=os.getenv("EMAIL_PORT"),
     MAIL_SERVER=os.getenv("EMAIL_HOST"),
-    MAIL_STARTTLS=False,
-    MAIL_SSL_TLS=True,
-    USE_CREDENTIALS=True,
-    VALIDATE_CERTS=True,
+    MAIL_SSL_TLS=False,
+    MAIL_STARTTLS=True,
 )
 
 
