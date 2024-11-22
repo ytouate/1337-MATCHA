@@ -13,7 +13,7 @@ router = APIRouter()
 async def signup(payload: SignupData, background_tasks: BackgroundTasks):
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-    if not (
+    if (
         check_field_exist("users", "email", payload.email)
         or check_field_exist("users", "username", payload.username)
     ):

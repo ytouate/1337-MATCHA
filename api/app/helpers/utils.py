@@ -118,11 +118,16 @@ def run_query(query: str, commit=True):
 
 
 def check_field_exist(table, field, value) -> bool:
-    query = f"""SELECT 1
+    query = f"""
+    SELECT 1
     FROM {table}
-    WHERE {field} = '{value}';
+    WHERE {field} = %s
+    LIMIT 1;
     """
-    return not bool(run_query(query, commit=False))
+    with PgDatabase() as db:
+        db.cursor.execute(query, (value,))
+        result = db.cursor.fetchone()
+        return bool(result)
 
 
 def create_row(table, data: dict):
