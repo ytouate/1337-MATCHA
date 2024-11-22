@@ -5,6 +5,7 @@ import json
 from typing import List
 from ..database.database import PgDatabase
 from .schemas import Column
+from jinja2 import Template
 
 dotenv.load_dotenv()
 
@@ -19,6 +20,11 @@ conf = ConnectionConfig(
 )
 
 
+def get_file(file_path):
+    with open(file_path) as file:
+        return file.read()
+
+
 def get_table_data(file_name):
     file_path = os.path.join(
         os.path.dirname(__file__), "..", "database", "models", file_name
@@ -28,12 +34,25 @@ def get_table_data(file_name):
     return table_data
 
 
-async def send_email_async(subject: str, email_to: str):
-    print(os.getenv("EMAIL_HOST_USER"), os.getenv("EMAIL_HOST_PASSWORD"))
+def get_body_email(file_name, link):
+    file_path = os.path.join(
+        os.path.dirname(__file__),
+        "..",
+        "template",
+        file_name,
+    )
+    template_email = Template(get_file(file_path=file_path))
+    return template_email.render(link=link)
+
+
+async def send_email(subject: str, email_to: str):
     message = MessageSchema(
         subject=subject,
         recipients=[email_to],
-        body="<h1>hello</h1>",
+        body=get_body_email(
+            file_name="email_confirmation.html",
+            link="http://google.com",
+        ),
         subtype=MessageType.html,
     )
     fm = FastMail(conf)
