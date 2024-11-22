@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 import dotenv
-from .routers.routes import router
+from .routers.auth import router
 from .helpers.utils import get_table_data
 
 dotenv.load_dotenv()

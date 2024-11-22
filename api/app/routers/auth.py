@@ -12,6 +12,7 @@ router = APIRouter()
 @router.post("/signup")
 async def signup(payload: SignupData, background_tasks: BackgroundTasks):
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
     if not (
         check_field_exist("users", "email", payload.email)
         or check_field_exist("users", "username", payload.username)
@@ -29,7 +30,7 @@ async def signup(payload: SignupData, background_tasks: BackgroundTasks):
     create_row("users", data)
     background_tasks.add_task(
         send_email,
-        subject="Confirm Your Email Address for Matcha",
+        subject="Matcha Email Confirmation",
         email_to=data["email"],
     )
     return JSONResponse(

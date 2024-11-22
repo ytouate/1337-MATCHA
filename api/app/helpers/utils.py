@@ -20,11 +20,6 @@ conf = ConnectionConfig(
 )
 
 
-def get_file(file_path):
-    with open(file_path) as file:
-        return file.read()
-
-
 def get_table_data(file_name):
     file_path = os.path.join(
         os.path.dirname(__file__), "..", "database", "models", file_name
@@ -34,14 +29,16 @@ def get_table_data(file_name):
     return table_data
 
 
-def get_body_email(file_name, link):
+def get_email_body(file_name, link):
     file_path = os.path.join(
         os.path.dirname(__file__),
         "..",
         "template",
         file_name,
     )
-    template_email = Template(get_file(file_path=file_path))
+    with open(file_path) as file:
+        file_content = file.read()
+    template_email = Template(file_content)
     return template_email.render(link=link)
 
 
@@ -49,9 +46,9 @@ async def send_email(subject: str, email_to: str):
     message = MessageSchema(
         subject=subject,
         recipients=[email_to],
-        body=get_body_email(
+        body=get_email_body(
             file_name="email_confirmation.html",
-            link="http://google.com",
+            link="https://google.com",
         ),
         subtype=MessageType.html,
     )
