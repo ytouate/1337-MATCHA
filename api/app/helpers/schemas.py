@@ -8,6 +8,7 @@ class Gender(Enum):
     MALE = "Male"
     FEMALE = "female"
 
+
 class SexualPreference(Enum):
     MALE = "Male"
     FEMALE = "female"

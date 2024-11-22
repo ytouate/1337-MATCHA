@@ -1,3 +1,5 @@
+"use client";
+
 import { useTheme } from "next-themes";
 import { Button } from "../ui/button";
 import { Moon, Sun } from "lucide-react";
@@ -8,15 +10,6 @@ export const Navbar = ({
 }: {
   setSigninModalOpen: (value: boolean) => void;
 }) => {
-  const [mounted, setMounted] = useState(false);
-
-  // Ensure component only renders after hydration
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null; // Avoid rendering during SSR
-
   const { setTheme, theme } = useTheme();
   return (
     <div className="fixed left-0 right-0 p-4">

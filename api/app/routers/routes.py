@@ -1,16 +1,17 @@
-from ..database.queries.create_row import create_row
+from ..helpers.utils import create_row
 from ..helpers.schemas import SignupData
-from ..helpers.db import check_field_exist
+from ..helpers.utils import check_field_exist
 from fastapi.responses import JSONResponse
-from ..helpers.utils import pwd_context
 from fastapi import APIRouter
-from ..helpers.send_mail import send_email_async
+from ..helpers.utils import send_email_async
+from passlib.context import CryptContext
 
 router = APIRouter()
 
 
 @router.post("/signup")
 async def signup(payload: SignupData):
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     if not (
         check_field_exist("users", "email", payload.email)
         or check_field_exist("users", "username", payload.username)
