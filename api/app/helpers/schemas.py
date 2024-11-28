@@ -6,12 +6,12 @@ from enum import Enum
 
 class Gender(Enum):
     MALE = "Male"
-    FEMALE = "female"
+    FEMALE = "Female"
 
 
 class SexualPreference(Enum):
     MALE = "Male"
-    FEMALE = "female"
+    FEMALE = "Female"
 
 
 class SignupData(BaseModel):
