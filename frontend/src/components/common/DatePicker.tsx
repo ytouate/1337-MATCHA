@@ -24,7 +24,7 @@ interface DatePickerProps {
   startYear?: number;
   endYear?: number;
   date: Date;
-  setDate: (...event: any[]) => void;
+  setDate: (date: Date) => void;
 }
 export function DatePicker({
   startYear = getYear(new Date()) - 100,
@@ -32,10 +32,6 @@ export function DatePicker({
   date = new Date(),
   setDate,
 }: DatePickerProps) {
-  console.log("===============================");
-  console.log(date);
-  console.log("===============================");
-
   const months = [
     "January",
     "February",
