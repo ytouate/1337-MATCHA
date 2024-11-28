@@ -6,7 +6,7 @@ from .helpers.utils import get_table_data
 dotenv.load_dotenv()
 
 users_table_data = get_table_data(file_name="user.json")
-# create_table('users1', users_table_data)
+# create_table('users', users_table_data)
 
 app = FastAPI()
 
