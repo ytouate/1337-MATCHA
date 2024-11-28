@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 import jose
 import os
 
-router = APIRouter()
+router = APIRouter(prefix="/auth")
 
 
 @router.post("/signup")
@@ -37,14 +37,14 @@ async def signup(payload: SignupData, background_tasks: BackgroundTasks):
         send_email,
         subject="Matcha Email Confirmation",
         email_to=data["email"],
-        link=f"http://localhost:9000/email_verification?token={token}",
+        link=f"http://localhost:9000/auth/email-verification?token={token}",
     )
     return JSONResponse(
         status_code=201, content={"message": "User successfully registered."}
     )
 
 
-@router.get("/email_verification")
+@router.get("/email-verification")
 def email_verification(token: str = Query(...)):
     try:
         token_decoded = jose.jwt.decode(
@@ -53,7 +53,6 @@ def email_verification(token: str = Query(...)):
         if token_decoded.get("type") != "email_verification":
             raise HTTPException(status_code=400, detail="Invalid token type")
         email = token_decoded.get("data")
-        print(email)
         if not update_database_value(
             table_name="users",
             condition_field="email",
