@@ -1,11 +1,14 @@
 from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
 import os
+import re
 import dotenv
 import json
-from typing import List
+from typing import List, Union
 from ..database.database import PgDatabase
 from .schemas import Column
 from jinja2 import Template
+from jose import jwt
+import datetime
 
 dotenv.load_dotenv()
 
@@ -42,13 +45,13 @@ def get_email_body(file_name, link):
     return template_email.render(link=link)
 
 
-async def send_email(subject: str, email_to: str):
+async def send_email(subject: str, email_to: str, link: str):
     message = MessageSchema(
         subject=subject,
         recipients=[email_to],
         body=get_email_body(
             file_name="email_confirmation.html",
-            link="https://google.com",
+            link=link,
         ),
         subtype=MessageType.html,
     )
@@ -117,18 +120,59 @@ def run_query(query: str, commit=True):
         return result
 
 
-def check_field_exist(table, field, value) -> bool:
-    query = f"""SELECT 1
-    FROM {table}
-    WHERE {field} = '{value}';
-    """
-    return not bool(run_query(query, commit=False))
+def escape_special_characters(value):
+    if isinstance(value, str):
+        return re.sub(r"([%_\'\"\\])", r"\\\1", value)
+    return value
+
+
+def check_field_exist(table: str, field: str, value: str) -> bool:
+    query = f"SELECT EXISTS(SELECT 1 FROM {table} WHERE {field} = %s)"
+    with PgDatabase() as db:
+        db.cursor.execute(
+            query,
+            (escape_special_characters(value),),
+        )
+        return db.cursor.fetchone()[0]
 
 
 def create_row(table, data: dict):
     keys = data.keys()
     values = data.values()
     query = f"""INSERT INTO {table} ({', '.join(keys)})
-    VALUES ({', '.join([f"'{value}'" for value in values])});
+    VALUES ({', '.join([f"'{escape_special_characters(value)}'" for value in values])});
     """
     run_query(query)
+
+
+def generate_jwt_token(type: str, data: str, expire_by_hour=2, algorithm="HS256"):
+    claims = {
+        "data": data,
+        "type": type,
+        "exp": datetime.datetime.now() + datetime.timedelta(hours=expire_by_hour),
+        "iat": datetime.datetime.now(),
+    }
+    JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+    return jwt.encode(claims=claims, key=JWT_SECRET_KEY, algorithm=algorithm)
+
+
+def update_database_value(
+    table_name: str,
+    field_to_update: str,
+    new_value: Union[str, int, bool],
+    condition_field: str,
+    condition_value: str,
+):
+    if not check_field_exist(
+        table=table_name, field=condition_field, value=condition_value
+    ):
+        return False
+
+    query = f"""
+    UPDATE {table_name}
+    SET {field_to_update} = '{escape_special_characters(new_value)}'
+    WHERE {condition_field} = '{escape_special_characters(condition_value)}'
+    """
+
+    run_query(query=query)
+    return True
