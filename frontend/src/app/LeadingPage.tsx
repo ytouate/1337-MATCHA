@@ -1,9 +1,9 @@
 "use client";
 import React, { FC, useState } from "react";
 import { Hero } from "@/components/Leading/Hero";
-import { Signup } from "@/components/Auth/Signup";
+import { Signup } from "@/components/auth/Signup";
 import { Navbar } from "@/components/Leading/Navbar";
-import { Signin } from "@/components/Auth/Signin";
+import { Signin } from "@/components/auth/Signin";
 import { FormsModal } from "@/components/common/Modal";
 
 const LeadingPage: FC = () => {

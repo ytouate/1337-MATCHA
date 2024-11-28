@@ -1,3 +1,4 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import React from "react";
 
@@ -27,13 +28,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { DatePicker } from "../Common/DatePicker";
+
+import { appAPI } from "@/utils/axios";
+import { Gender, SignupData } from "@/models";
+import { DatePicker } from "../common/DatePicker";
+import { useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 export const Signup = ({
   setSignupModalOpen,
 }: {
   setSignupModalOpen: (value: boolean) => void;
 }) => {
+  const { toast } = useToast();
+
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -42,14 +50,39 @@ export const Signup = ({
       last_name: "",
       email: "",
       birthdate: new Date(),
-      gender: "",
+      gender: Gender.Male,
       password: "",
       confirmPassword: "",
     },
   });
 
+  const signup = useMutation({
+    mutationFn: async (data: SignupData) => {
+      return await appAPI.auth.signupAuthSignupPost(data);
+    },
+    onSuccess: () => {
+      toast({
+        variant: "success",
+        title: "Success!",
+        description: "You have successfully signed up. Welcome aboard!",
+      });
+      setSignupModalOpen(false);
+    },
+    onError: () => {
+      toast({
+        variant: "error",
+        title: "Uh oh! Something went wrong.",
+        description: "There was a problem signing you up pelase try again!",
+      });
+    },
+    onSettled: () => {},
+  });
+
   function onSubmit(values: z.infer<typeof signUpSchema>) {
-    console.log(values);
+    signup.mutate({
+      ...values,
+      birthdate: values.birthdate.toISOString().split("T")[0],
+    });
   }
 
   return (
@@ -61,7 +94,6 @@ export const Signup = ({
       </DialogDescription>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Name Fields */}
           <div className="flex w-full justify-center space-x-2">
             {(["first_name", "last_name"] as const).map((name) => (
               <div className="flex-1" key={name}>
@@ -88,8 +120,6 @@ export const Signup = ({
               </div>
             ))}
           </div>
-
-          {/* Username Field */}
           <FormField
             control={form.control}
             name="username"
@@ -106,8 +136,6 @@ export const Signup = ({
               </FormItem>
             )}
           />
-
-          {/* Email Field */}
           <FormField
             control={form.control}
             name="email"
@@ -121,21 +149,18 @@ export const Signup = ({
               </FormItem>
             )}
           />
-
-          {/* Birthdate Field */}
           <div className="flex w-full space-x-2">
             <div className="w-full">
               <FormField
                 control={form.control}
                 name="birthdate"
                 render={({ field }) => {
-                  console.log(field);
                   return (
                     <FormItem>
                       <FormLabel>Birthdate</FormLabel>
                       <FormControl {...field}>
                         <DatePicker
-                          date={field.value}
+                          date={new Date(field.value)}
                           setDate={field.onChange}
                         />
                       </FormControl>
@@ -185,8 +210,6 @@ export const Signup = ({
               />
             </div>
           </div>
-
-          {/* Password Fields */}
           {(["password", "confirmPassword"] as const).map((name) => (
             <div className="flex-1" key={name}>
               <FormField
@@ -220,7 +243,9 @@ export const Signup = ({
             >
               Cancel
             </Button>
-            <Button type="submit">Submit</Button>
+            <Button disabled={signup.isPending} type="submit">
+              Submit
+            </Button>
           </div>
         </form>
       </Form>
