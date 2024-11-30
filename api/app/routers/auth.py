@@ -37,7 +37,7 @@ async def signup(payload: SignupData, background_tasks: BackgroundTasks):
         send_email,
         subject="Matcha Email Confirmation",
         email_to=data["email"],
-        link=f"http://localhost:9000/email_verification?token={token}",
+        link=f"{os.getenv("BACKEND_BASE_URL")}email_verification?token={token}",
     )
     return JSONResponse(
         status_code=201, content={"message": "User successfully registered."}
@@ -52,18 +52,16 @@ def email_verification(token: str = Query(...)):
         )
         if token_decoded.get("type") != "email_verification":
             raise HTTPException(status_code=400, detail="Invalid token type")
-        email = token_decoded.get("data")
-        print(email)
         if not update_database_value(
             table_name="users",
             condition_field="email",
-            condition_value=email,
+            condition_value=token_decoded.get("data"),
             new_value=True,
             field_to_update="is_verified",
         ):
             raise HTTPException(status_code=400, detail="Email invalid")
 
-        return RedirectResponse(url=os.getenv("FRONT_URL_BASE"), status_code=301)
+        return RedirectResponse(url=os.getenv("FRONTEND_BASE_URL"), status_code=301)
     except jose.jwt.ExpiredSignatureError:
         raise HTTPException(status_code=400, detail="Token has expired!")
     except jose.JWTError:

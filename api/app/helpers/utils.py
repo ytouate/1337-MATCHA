@@ -145,11 +145,11 @@ def create_row(table, data: dict):
     run_query(query)
 
 
-def generate_jwt_token(type: str, data: str, expire_by_hour=2, algorithm="HS256"):
+def generate_jwt_token(type: str, data: str, expire_by_minutes=15, algorithm="HS256"):
     claims = {
         "data": data,
         "type": type,
-        "exp": datetime.datetime.now() + datetime.timedelta(hours=expire_by_hour),
+        "exp": datetime.datetime.now() + datetime.timedelta(minutes=expire_by_minutes),
         "iat": datetime.datetime.now(),
     }
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
