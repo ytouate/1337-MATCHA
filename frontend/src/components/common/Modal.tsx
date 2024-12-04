@@ -1,27 +1,27 @@
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
-export const FormsModal = ({
+export const Modal = ({
   children,
-  setSignupModalOpen,
-  signupModalOpen,
-  setSigninModalOpen,
-  signinModalOpen,
+  setModalOpen,
+  modalOpen,
 }: {
-  setSignupModalOpen: (value: boolean) => void;
-  signupModalOpen: boolean;
+  setModalOpen: (value: boolean) => void;
+  modalOpen: boolean;
   children: React.ReactNode;
-  setSigninModalOpen: (value: boolean) => void;
-  signinModalOpen: boolean;
 }) => {
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
   return (
-    <Dialog
-      onOpenChange={() => {
-        if (signinModalOpen) setSigninModalOpen(false);
-        if (signupModalOpen) setSignupModalOpen(false);
-      }}
-      open={signupModalOpen || signinModalOpen}
-    >
-      <DialogContent className="border-border max-h-[100vh] overflow-auto rounded-lg w-[95%]">
+    <Dialog modal onOpenChange={() => setModalOpen(false)} open={modalOpen}>
+      <DialogContent
+        onInteractOutside={(e) => e.preventDefault()}
+        onKeyDown={handleKeyDown}
+        className="border-border max-h-[100vh] overflow-auto rounded-lg w-[95%]"
+      >
         {children}
       </DialogContent>
     </Dialog>

@@ -28,20 +28,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-import { appAPI } from "@/utils/axios";
-import { Gender, SignupData } from "@/models";
+import { Gender } from "@/models";
 import { DatePicker } from "../common/DatePicker";
-import { useMutation } from "@tanstack/react-query";
-import { useToast } from "@/hooks/use-toast";
+import { useSignup } from "@/hooks/auth/useSignup";
 
 export const Signup = ({
   setSignupModalOpen,
+  setShowSuccessToast,
 }: {
   setSignupModalOpen: (value: boolean) => void;
+  setShowSuccessToast: (value: boolean) => void;
 }) => {
-  const { toast } = useToast();
-
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -56,26 +53,9 @@ export const Signup = ({
     },
   });
 
-  const signup = useMutation({
-    mutationFn: async (data: SignupData) => {
-      return await appAPI.auth.signupAuthSignupPost(data);
-    },
-    onSuccess: () => {
-      toast({
-        variant: "success",
-        title: "Success!",
-        description: "You have successfully signed up. Welcome aboard!",
-      });
-      setSignupModalOpen(false);
-    },
-    onError: () => {
-      toast({
-        variant: "error",
-        title: "Uh oh! Something went wrong.",
-        description: "There was a problem signing you up pelase try again!",
-      });
-    },
-    onSettled: () => {},
+  const signup = useSignup(() => {
+    setShowSuccessToast(true);
+    setSignupModalOpen(false);
   });
 
   function onSubmit(values: z.infer<typeof signUpSchema>) {
@@ -86,12 +66,14 @@ export const Signup = ({
   }
 
   return (
-    <DialogHeader>
-      <DialogTitle>Join us at Matcha</DialogTitle>
-      <DialogDescription>
-        Connect with a vibrant community and explore endless opportunities.
-        Start your journey with Matcha!
-      </DialogDescription>
+    <>
+      <DialogHeader>
+        <DialogTitle>Join us at Matcha</DialogTitle>
+        <DialogDescription>
+          Connect with a vibrant community and explore endless opportunities.
+          Start your journey with Matcha!
+        </DialogDescription>
+      </DialogHeader>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="flex w-full justify-center space-x-2">
@@ -249,6 +231,6 @@ export const Signup = ({
           </div>
         </form>
       </Form>
-    </DialogHeader>
+    </>
   );
 };
