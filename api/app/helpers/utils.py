@@ -9,6 +9,7 @@ from .schemas import Column
 from jinja2 import Template
 from jose import jwt
 import datetime
+from datetime import timedelta
 
 dotenv.load_dotenv()
 
@@ -21,15 +22,6 @@ conf = ConnectionConfig(
     MAIL_SSL_TLS=False,
     MAIL_STARTTLS=True,
 )
-
-
-def get_table_data(file_name):
-    file_path = os.path.join(
-        os.path.dirname(__file__), "..", "database", "models", file_name
-    )
-    with open(file_path) as file:
-        table_data = json.load(file)
-    return table_data
 
 
 def get_email_body(file_name, link):
@@ -74,105 +66,117 @@ def get_type(name, type: dict) -> str:
         CREATE TYPE t_{name} AS ENUM ({', '.join([f"{e}" for e in type.get("enum", [])])});
     """
 
-    exists = run_query(query=check_query, commit=False)
+    exists = DatabaseHelper.run_query(query=check_query, commit=False)
     if not exists:
-        run_query(create_query)
+        DatabaseHelper.run_query(create_query)
 
     return f"t_{name}"
 
 
-def generate_column_definitions(columns):
-    def build_column_definition(column):
-        type_column = get_type(column["name"], column["type"])
-
-        constraints = [
-            ("NOT NULL", not column.get("is_null", True)),
-            (f"CHECK ({column['name']} <> '')", not column.get("is_blank", True)),
-            (
-                f"DEFAULT {str(column.get("default", None))}",
-                column.get("default", None) is not None,
-            ),
-            ("PRIMARY KEY", column.get("is_primary", False)),
-            ("UNIQUE", column.get("is_unique", False)),
-        ]
-
-        applied_constraints = [
-            constraint for constraint, condition in constraints if condition
-        ]
-
-        return f"{column['name']} {type_column} {' '.join(applied_constraints)}"
-
-    return [build_column_definition(column) for column in columns]
-
-
-def create_table(name: str, columns: List[Column]):
-    columns_definition = generate_column_definitions(columns=columns)
-    query = f"CREATE TABLE {name} (\n{",".join(columns_definition)}\n);"
-    run_query(query)
-
-
-def run_query(query: str, commit=True):
-    with PgDatabase() as db:
-        db.cursor.execute(query)
-        result = db.cursor.rowcount
-        if commit:
-            db.connection.commit()
-        return result
-
-
-def escape_special_characters(value):
-    if isinstance(value, str):
-        return re.sub(r"([%_\'\"\\])", r"\\\1", value)
-    return value
-
-
-def check_field_exist(table: str, field: str, value: str) -> bool:
-    query = f"SELECT EXISTS(SELECT 1 FROM {table} WHERE {field} = %s)"
-    with PgDatabase() as db:
-        db.cursor.execute(
-            query,
-            (escape_special_characters(value),),
-        )
-        return db.cursor.fetchone()[0]
-
-
-def create_row(table, data: dict):
-    keys = data.keys()
-    values = data.values()
-    query = f"""INSERT INTO {table} ({', '.join(keys)})
-    VALUES ({', '.join([f"'{escape_special_characters(value)}'" for value in values])});
-    """
-    run_query(query)
-
-
-def generate_jwt_token(type: str, data: str, expire_by_hour=2, algorithm="HS256"):
+def generate_jwt_token(type: str, data: dict, expires_delta: timedelta, algorithm="HS256"):
     claims = {
         "data": data,
         "type": type,
-        "exp": datetime.datetime.now() + datetime.timedelta(hours=expire_by_hour),
+        "exp": datetime.datetime.now() + expires_delta,
         "iat": datetime.datetime.now(),
     }
     JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
     return jwt.encode(claims=claims, key=JWT_SECRET_KEY, algorithm=algorithm)
 
 
-def update_database_value(
-    table_name: str,
-    field_to_update: str,
-    new_value: Union[str, int, bool],
-    condition_field: str,
-    condition_value: str,
-):
-    if not check_field_exist(
-        table=table_name, field=condition_field, value=condition_value
+class DatabaseHelper:
+    @staticmethod
+    def get_table_data(file_name):
+        file_path = os.path.join(
+            os.path.dirname(__file__), "..", "database", "models", file_name
+        )
+        with open(file_path) as file:
+            table_data = json.load(file)
+        return table_data
+
+    @staticmethod
+    def field_exists(table: str, field: str, value: str) -> bool:
+        query = f"SELECT EXISTS(SELECT 1 FROM {table} WHERE {field} = %s) as exists"
+        with PgDatabase() as db:
+            db.cursor.execute(
+                query,
+                (DatabaseHelper.escape_special_characters(value),),
+            )
+            result = db.cursor.fetchone()
+            return result["exists"] if result else False
+
+    @staticmethod
+    def update_database_value(
+        table_name: str,
+        field_to_update: str,
+        new_value: Union[str, int, bool],
+        condition_field: str,
+        condition_value: str,
     ):
-        return False
+        if not DatabaseHelper.field_exists(
+            table=table_name, field=condition_field, value=condition_value
+        ):
+            return False
 
-    query = f"""
-    UPDATE {table_name}
-    SET {field_to_update} = '{escape_special_characters(new_value)}'
-    WHERE {condition_field} = '{escape_special_characters(condition_value)}'
-    """
+        query = f"""
+        UPDATE {table_name}
+        SET {field_to_update} = '{DatabaseHelper.escape_special_characters(new_value)}'
+        WHERE {condition_field} = '{DatabaseHelper.escape_special_characters(condition_value)}'
+        """
 
-    run_query(query=query)
-    return True
+        DatabaseHelper.run_query(query=query)
+        return True
+
+    @staticmethod
+    def create_row(table, data: dict):
+        keys = data.keys()
+        values = data.values()
+        query = f"""INSERT INTO {table} ({', '.join(keys)})
+        VALUES ({', '.join([f"'{DatabaseHelper.escape_special_characters(value)}'" for value in values])});
+        """
+        DatabaseHelper.run_query(query)
+
+    @staticmethod
+    def escape_special_characters(value):
+        if isinstance(value, str):
+            return re.sub(r"([%_\'\"\\])", r"\\\1", value)
+        return value
+
+    @staticmethod
+    def generate_column_definitions(columns):
+        def build_column_definition(column):
+            type_column = get_type(column["name"], column["type"])
+
+            constraints = [
+                ("NOT NULL", not column.get("is_null", True)),
+                (f"CHECK ({column['name']} <> '')", not column.get("is_blank", True)),
+                (
+                    f"DEFAULT {str(column.get("default", None))}",
+                    column.get("default", None) is not None,
+                ),
+                ("PRIMARY KEY", column.get("is_primary", False)),
+                ("UNIQUE", column.get("is_unique", False)),
+            ]
+
+            applied_constraints = [
+                constraint for constraint, condition in constraints if condition
+            ]
+
+            return f"{column['name']} {type_column} {' '.join(applied_constraints)}"
+
+        return [build_column_definition(column) for column in columns]
+
+    @staticmethod
+    def create_table(name: str, columns: List[Column]):
+        columns_definition = DatabaseHelper.generate_column_definitions(columns=columns)
+        query = f"CREATE TABLE {name} (\n{",".join(columns_definition)}\n);"
+        DatabaseHelper.run_query(query)
+
+    @staticmethod
+    def run_query(query: str, commit=True):
+        with PgDatabase() as db:
+            db.cursor.execute(query)
+            result = db.cursor.rowcount
+            if commit:
+                db.connection.commit()
+            return result

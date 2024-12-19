@@ -21,6 +21,17 @@ export interface HTTPValidationError {
   detail?: ValidationError[];
 }
 
+/** SignInData */
+export interface SignInData {
+  /** Login */
+  login: string;
+  /**
+   * Password
+   * @minLength 8
+   */
+  password: string;
+}
+
 /** SignupData */
 export interface SignupData {
   /**
@@ -207,8 +218,10 @@ export class HttpClient<SecurityDataType = unknown> {
 }
 
 /**
- * @title FastAPI
- * @version 0.1.0
+ * @title Matcha API
+ * @version 1.0.0
+ *
+ * API for Matcha dating application
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
   auth = {
@@ -234,7 +247,7 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
      *
      * @name EmailVerificationAuthEmailVerificationGet
      * @summary Email Verification
-     * @request GET:/auth/email_verification
+     * @request GET:/auth/email-verification
      */
     emailVerificationAuthEmailVerificationGet: (
       query: {
@@ -244,9 +257,26 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       params: RequestParams = {},
     ) =>
       this.request<any, HTTPValidationError>({
-        path: `/auth/email_verification`,
+        path: `/auth/email-verification`,
         method: "GET",
         query: query,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @name SigninAuthSigninPost
+     * @summary Signin
+     * @request POST:/auth/signin
+     */
+    signinAuthSigninPost: (data: SignInData, params: RequestParams = {}) =>
+      this.request<any, HTTPValidationError>({
+        path: `/auth/signin`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
         format: "json",
         ...params,
       }),

@@ -1,10 +1,10 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import React from "react";
-
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -20,12 +20,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useSignin } from "@/hooks/auth/useSignin";
+import { useRouter } from "next/navigation";
 
 export const Signin = ({
   setSigninModalOpen,
 }: {
   setSigninModalOpen: (value: boolean) => void;
 }) => {
+  const router = useRouter();
+  
   const form = useForm<z.infer<typeof signinSchema>>({
     resolver: zodResolver(signinSchema),
     defaultValues: {
@@ -34,8 +38,13 @@ export const Signin = ({
     },
   });
 
+  const signin = useSignin(() => {
+    setSigninModalOpen(false);
+    router.push("/");
+  });
+
   function onSubmit(values: z.infer<typeof signinSchema>) {
-    console.log(values);
+    signin.mutate(values);
   }
 
   return (
@@ -47,40 +56,34 @@ export const Signin = ({
       </DialogDescription>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          {/* Login Field */}
           <FormField
             control={form.control}
             name="login"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>login</FormLabel>
+                <FormLabel>Email or Username</FormLabel>
                 <FormControl>
-                  <Input placeholder="login" {...field} />
+                  <Input placeholder="Enter your email or username" {...field} />
                 </FormControl>
-                <FormDescription>Enter your email or username</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          {/* Password Field */}
-          <div className="flex-1">
-            <FormField
-              control={form.control}
-              name={"password"}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="********" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Password</FormLabel>
+                <FormControl>
+                  <Input type="password" placeholder="Enter your password" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-          {/* Action Buttons */}
           <div className="flex justify-end space-x-2">
             <Button
               onClick={() => setSigninModalOpen(false)}
@@ -89,7 +92,12 @@ export const Signin = ({
             >
               Cancel
             </Button>
-            <Button type="submit">Submit</Button>
+            <Button 
+              type="submit"
+              disabled={signin.isPending}
+            >
+              {signin.isPending ? "Signing in..." : "Sign in"}
+            </Button>
           </div>
         </form>
       </Form>
