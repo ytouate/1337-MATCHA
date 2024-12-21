@@ -37,4 +37,5 @@ class PgDatabase(Database):
             user=os.getenv("POSTGRES_USER"),
             password=os.getenv("POSTGRES_PASSWORD"),
             dbname=os.getenv("POSTGRES_DB"),
+            row_factory=psycopg.rows.dict_row,
         )

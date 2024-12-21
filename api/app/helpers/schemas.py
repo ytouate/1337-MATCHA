@@ -28,6 +28,11 @@ class SignupData(BaseModel):
     birthdate: date = Field()
 
 
+class SignInData(BaseModel):
+    login: str | EmailStr
+    password: str = Field(min_length=8)
+
+
 class User(BaseModel):
     first_name: str
     last_name: str

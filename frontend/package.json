@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "generate-models": "npx swagger-typescript-api -p http://localhost:9000/openapi.json -o ./src -n models.ts --axios"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
