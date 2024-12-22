@@ -24,6 +24,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { signUpSchema } from "@/forms.validators";
 import {
+  Dialog,
+  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -32,13 +34,13 @@ import { Gender } from "@/models";
 import { DatePicker } from "../common/DatePicker";
 import { useSignup } from "@/hooks/auth/useSignup";
 
-export const Signup = ({
-  setSignupModalOpen,
-  setShowSuccessToast,
-}: {
-  setSignupModalOpen: (value: boolean) => void;
-  setShowSuccessToast: (value: boolean) => void;
-}) => {
+interface Props {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+}
+
+export const Signup = ({ isOpen, onOpenChange, onSuccess }: Props) => {
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
@@ -53,9 +55,16 @@ export const Signup = ({
     },
   });
 
+  const handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+
   const signup = useSignup(() => {
-    setShowSuccessToast(true);
-    setSignupModalOpen(false);
+    onSuccess();
+    onOpenChange(false);
   });
 
   function onSubmit(values: z.infer<typeof signUpSchema>) {
@@ -66,171 +75,181 @@ export const Signup = ({
   }
 
   return (
-    <>
-      <DialogHeader>
-        <DialogTitle>Join us at Matcha</DialogTitle>
-        <DialogDescription>
-          Connect with a vibrant community and explore endless opportunities.
-          Start your journey with Matcha!
-        </DialogDescription>
-      </DialogHeader>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <div className="flex w-full justify-center space-x-2">
-            {(["first_name", "last_name"] as const).map((name) => (
-              <div className="flex-1" key={name}>
-                <FormField
-                  control={form.control}
-                  name={name}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        {name === "first_name" ? "First Name" : "Last Name"}
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder={
-                            name === "first_name" ? "Youssef" : "Touate"
-                          }
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+    <Dialog modal onOpenChange={onOpenChange} open={isOpen}>
+      <DialogContent
+        onKeyDown={handleKeyDown}
+        onInteractOutside={(e) => e.preventDefault()}
+        className="border-border max-h-[100vh] overflow-auto rounded-lg w-[95%]"
+      >
+        <>
+          <DialogHeader>
+            <DialogTitle>Join us at Matcha</DialogTitle>
+            <DialogDescription>
+              Connect with a vibrant community and explore endless
+              opportunities. Start your journey with Matcha!
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="flex w-full justify-center space-x-2">
+                {(["first_name", "last_name"] as const).map((name) => (
+                  <div className="flex-1" key={name}>
+                    <FormField
+                      control={form.control}
+                      name={name}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>
+                            {name === "first_name" ? "First Name" : "Last Name"}
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder={
+                                name === "first_name" ? "Youssef" : "Touate"
+                              }
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-          <FormField
-            control={form.control}
-            name="username"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Username</FormLabel>
-                <FormControl>
-                  <Input placeholder="username" {...field} />
-                </FormControl>
-                <FormDescription>
-                  This is your public display name.
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input placeholder="ytouate@matcha.com" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <div className="flex w-full space-x-2">
-            <div className="w-full">
               <FormField
                 control={form.control}
-                name="birthdate"
-                render={({ field }) => {
-                  return (
-                    <FormItem>
-                      <FormLabel>Birthdate</FormLabel>
-                      <FormControl {...field}>
-                        <DatePicker
-                          date={new Date(field.value)}
-                          setDate={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  );
-                }}
-              />
-            </div>
-            <div className="w-full">
-              <FormField
-                control={form.control}
-                name="gender"
+                name="username"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Gender</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        if (value === "") return;
-                        field.onChange(value);
-                      }}
-                      {...field}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="flex w-full items-center justify-between rounded-md py-1.5 px-[15px] border border-border">
-                          <SelectValue placeholder={"Custom message"} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-white bg-background border rounded">
-                        <SelectItem
-                          className="flex cursor-pointer items-center h-[25px] px-[35px] pl-[25px] relative"
-                          value="Male"
-                        >
-                          Male
-                        </SelectItem>
-                        <SelectItem
-                          className="flex cursor-pointer items-center h-[25px] px-[35px] pl-[25px] relative"
-                          value="Female"
-                        >
-                          Female
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="username" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      This is your public display name.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-          </div>
-          {(["password", "confirmPassword"] as const).map((name) => (
-            <div className="flex-1" key={name}>
               <FormField
                 control={form.control}
-                name={name}
+                name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>
-                      {name === "password" ? "Password" : "Confirm Password"}
-                    </FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="********"
-                        {...field}
-                      />
+                      <Input placeholder="ytouate@matcha.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
-          ))}
+              <div className="flex w-full space-x-2">
+                <div className="w-full">
+                  <FormField
+                    control={form.control}
+                    name="birthdate"
+                    render={({ field }) => {
+                      return (
+                        <FormItem>
+                          <FormLabel>Birthdate</FormLabel>
+                          <FormControl {...field}>
+                            <DatePicker
+                              date={new Date(field.value)}
+                              setDate={field.onChange}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                </div>
+                <div className="w-full">
+                  <FormField
+                    control={form.control}
+                    name="gender"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Gender</FormLabel>
+                        <Select
+                          onValueChange={(value) => {
+                            if (value === "") return;
+                            field.onChange(value);
+                          }}
+                          {...field}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="flex w-full items-center justify-between rounded-md py-1.5 px-[15px] border border-border">
+                              <SelectValue placeholder={"Custom message"} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-white bg-background border rounded">
+                            <SelectItem
+                              className="flex cursor-pointer items-center h-[25px] px-[35px] pl-[25px] relative"
+                              value="Male"
+                            >
+                              Male
+                            </SelectItem>
+                            <SelectItem
+                              className="flex cursor-pointer items-center h-[25px] px-[35px] pl-[25px] relative"
+                              value="Female"
+                            >
+                              Female
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+              {(["password", "confirmPassword"] as const).map((name) => (
+                <div className="flex-1" key={name}>
+                  <FormField
+                    control={form.control}
+                    name={name}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          {name === "password"
+                            ? "Password"
+                            : "Confirm Password"}
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="********"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              ))}
 
-          {/* Action Buttons */}
-          <div className="flex justify-end space-x-2">
-            <Button
-              onClick={() => setSignupModalOpen(false)}
-              variant="outline"
-              aria-label="Cancel"
-            >
-              Cancel
-            </Button>
-            <Button disabled={signup.isPending} type="submit">
-              Submit
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </>
+              {/* Action Buttons */}
+              <div className="flex justify-end space-x-2">
+                <Button
+                  onClick={() => onOpenChange(false)}
+                  variant="outline"
+                  aria-label="Cancel"
+                >
+                  Cancel
+                </Button>
+                <Button disabled={signup.isPending} type="submit">
+                  Submit
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </>
+      </DialogContent>
+    </Dialog>
   );
 };

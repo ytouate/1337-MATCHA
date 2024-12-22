@@ -1,8 +1,9 @@
-import { useMutation } from "@tanstack/react-query";
-import { useToast } from "../use-toast";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthStore } from "@/store/auth";
 import axios from "axios";
-import { SignInData } from "@/models";
 import { appAPI } from "@/utils/axios";
+import { SignInData } from "@/models";
+import { useToast } from "../use-toast";
 
 interface SignInResponse {
   user: {
@@ -15,14 +16,18 @@ interface SignInResponse {
 }
 
 export const useSignin = (onSuccessCallback?: () => void) => {
+  const { setUser } = useAuthStore();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: SignInData) => {
       const response = await appAPI.auth.signinAuthSigninPost(data);
       return response.data as SignInResponse;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setUser(data.user);
+      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
       toast({
         variant: "success",
         title: "Welcome back!",

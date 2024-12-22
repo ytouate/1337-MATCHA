@@ -280,5 +280,52 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
         format: "json",
         ...params,
       }),
+
+    /**
+     * No description
+     *
+     * @name ForgotPasswordAuthForgotPasswordPost
+     * @summary Forgot Password
+     * @request POST:/auth/forgot-password
+     */
+    forgotPasswordAuthForgotPasswordPost: (data: object, params: RequestParams = {}) =>
+      this.request<any, HTTPValidationError>({
+        path: `/auth/forgot-password`,
+        method: "POST",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @name GetMeAuthMeGet
+     * @summary Get Me
+     * @request GET:/auth/me
+     */
+    getMeAuthMeGet: (params: RequestParams = {}) =>
+      this.request<any, any>({
+        path: `/auth/me`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * No description
+     *
+     * @name SignoutAuthSignoutPost
+     * @summary Signout
+     * @request POST:/auth/signout
+     */
+    signoutAuthSignoutPost: (params: RequestParams = {}) =>
+      this.request<any, any>({
+        path: `/auth/signout`,
+        method: "POST",
+        format: "json",
+        ...params,
+      }),
   };
 }
