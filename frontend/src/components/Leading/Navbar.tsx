@@ -5,13 +5,15 @@ import { useAuthStore } from "@/store/auth";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { Moon, Sun } from "lucide-react";
+import { useSignout } from "@/hooks/auth/useSignout";
 
 interface Props {
   setSigninModalOpen: (value: boolean) => void;
 }
 
 export const Navbar = ({ setSigninModalOpen }: Props) => {
-  const { isAuthenticated, logout } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
+  const { mutate: signout } = useSignout();
   const router = useRouter();
   const { setTheme, theme } = useTheme();
 
@@ -41,7 +43,7 @@ export const Navbar = ({ setSigninModalOpen }: Props) => {
           ) : (
             <Button
               onClick={() => {
-                logout();
+                signout();
                 router.push("/");
               }}
               className="rounded-full"
