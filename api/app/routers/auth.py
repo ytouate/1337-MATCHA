@@ -2,13 +2,14 @@ import os
 from datetime import timedelta
 
 import jose
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Response
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Response, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from passlib.context import CryptContext
 
 from ..database.database import PgDatabase
 from ..helpers.schemas import SignInData, SignupData
 from ..helpers.utils import DatabaseHelper, generate_jwt_token, send_email
+from ..helpers.auth import get_current_user
 
 router = APIRouter(prefix="/auth")
 
@@ -139,8 +140,113 @@ async def signin(payload: SignInData, response: Response):
     }
 
 
+@router.post("/forgot-password")
+async def forgot_password(payload: dict, background_tasks: BackgroundTasks):
+    email = payload.get("email")
+    if not DatabaseHelper.field_exists("users", "email", email):
+        raise HTTPException(status_code=404, detail="Email not found")
+
+    token = generate_jwt_token(
+        type="reset_password",
+        data={"email": email},
+        expires_delta=timedelta(hours=1),
+    )
+
+    background_tasks.add_task(
+        send_email,
+        subject="Reset Your Password",
+        email_to=email,
+        link=f"{os.getenv('PASSWORD_RESET_REDIRECT_URL')}/{token}",
+        template_name="password_reset.html",
+    )
+
+    return {
+        "message": "If an account exists with that email, you will receive a password reset link"
+    }
+
+
+@router.get("/validate-reset-token/{token}")
+async def validate_reset_token(token: str):
+    try:
+        decoded_token = jose.jwt.decode(
+            token,
+            os.getenv("JWT_SECRET_KEY"),
+            algorithms=["HS256"],
+        )
+        if decoded_token.get("type") != "reset_password":
+            raise HTTPException(status_code=400, detail="Invalid token type")
+
+        email = decoded_token.get("data").get("email")
+        if not email or not DatabaseHelper.field_exists("users", "email", email):
+            raise HTTPException(status_code=404, detail="User not found")
+
+        return JSONResponse(status_code=200, content={"message": "Token is valid"})
+    except jose.JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+
+@router.post("/reset-password/{token}")
+async def reset_password(token: str, payload: dict):
+    try:
+        decoded_token = jose.jwt.decode(
+            token,
+            os.getenv("JWT_SECRET_KEY"),
+            algorithms=["HS256"],
+        )
+        if decoded_token.get("type") != "reset_password":
+            raise HTTPException(status_code=400, detail="Invalid token type")
+
+        email = decoded_token.get("data").get("email")
+        if not email or not DatabaseHelper.field_exists("users", "email", email):
+            raise HTTPException(status_code=404, detail="User not found")
+
+        pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        hashed_password = pwd_context.hash(payload["new_password"])
+
+        DatabaseHelper.update_database_value(
+            "users", "password", hashed_password, "email", email
+        )
+
+        return JSONResponse(
+            status_code=200, content={"message": "Password reset successful"}
+        )
+    except jose.JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+
+@router.get("/me")
+async def get_me(request: Request):
+    user_data = get_current_user(request)
+
+    with PgDatabase() as db:
+        db.cursor.execute(
+            "SELECT id, email, username, first_name, last_name FROM users WHERE id = %s",
+            (user_data["user_id"],),
+        )
+        user = db.cursor.fetchone()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return user
+
+
 @router.post("/signout")
 async def signout(response: Response):
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token")
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        domain="localhost",
+        path="/",
+    )
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        domain="localhost",
+        path="/",
+    )
     return {"message": "Successfully signed out"}
