@@ -37,12 +37,12 @@ def get_email_body(file_name, link):
     return template_email.render(link=link)
 
 
-async def send_email(subject: str, email_to: str, link: str):
+async def send_email(subject: str, email_to: str, link: str, template_name: str = "email_confirmation.html"):
     message = MessageSchema(
         subject=subject,
         recipients=[email_to],
         body=get_email_body(
-            file_name="email_confirmation.html",
+            file_name=template_name,
             link=link,
         ),
         subtype=MessageType.html,

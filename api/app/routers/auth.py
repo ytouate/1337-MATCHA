@@ -2,13 +2,14 @@ import os
 from datetime import timedelta
 
 import jose
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Response
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Response, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from passlib.context import CryptContext
 
 from ..database.database import PgDatabase
 from ..helpers.schemas import SignInData, SignupData
 from ..helpers.utils import DatabaseHelper, generate_jwt_token, send_email
+from ..helpers.auth import get_current_user
 
 router = APIRouter(prefix="/auth")
 
@@ -139,8 +140,62 @@ async def signin(payload: SignInData, response: Response):
     }
 
 
+@router.post("/forgot-password")
+async def forgot_password(payload: dict, background_tasks: BackgroundTasks):
+    email = payload.get("email")
+    if not DatabaseHelper.field_exists("users", "email", email):
+        raise HTTPException(status_code=404, detail="Email not found")
+    
+    token = generate_jwt_token(
+        type="password_reset",
+        data={"email": email},
+        expires_delta=timedelta(hours=1),
+    )
+    
+    background_tasks.add_task(
+        send_email,
+        subject="Reset Your Password",
+        email_to=email,
+        link=f"{os.getenv('PASSWORD_RESET_REDIRECT_URL')}?token={token}",
+        template_name="password_reset.html"
+    )
+    
+    return {"message": "If an account exists with that email, you will receive a password reset link"}
+
+
+@router.get("/me")
+async def get_me(request: Request):
+    user_data = get_current_user(request)
+    
+    with PgDatabase() as db:
+        db.cursor.execute(
+            "SELECT id, email, username, first_name, last_name FROM users WHERE id = %s",
+            (user_data["user_id"],)
+        )
+        user = db.cursor.fetchone()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return user
+
+
 @router.post("/signout")
 async def signout(response: Response):
-    response.delete_cookie("access_token")
-    response.delete_cookie("refresh_token")
+    response.delete_cookie(
+        key="access_token",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        domain="localhost",
+        path="/"
+    )
+    response.delete_cookie(
+        key="refresh_token",
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        domain="localhost",
+        path="/"
+    )
     return {"message": "Successfully signed out"}

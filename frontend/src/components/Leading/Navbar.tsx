@@ -1,15 +1,22 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/store/auth";
 import { useTheme } from "next-themes";
-import { Button } from "../ui/button";
+import { useRouter } from "next/navigation";
 import { Moon, Sun } from "lucide-react";
+import { useSignout } from "@/hooks/auth/useSignout";
 
-export const Navbar = ({
-  setSigninModalOpen,
-}: {
+interface Props {
   setSigninModalOpen: (value: boolean) => void;
-}) => {
+}
+
+export const Navbar = ({ setSigninModalOpen }: Props) => {
+  const { isAuthenticated } = useAuthStore();
+  const { mutate: signout } = useSignout();
+  const router = useRouter();
   const { setTheme, theme } = useTheme();
+
   return (
     <div className="fixed left-0 right-0 p-4">
       <div className="max-w-[1550px] m-auto flex w-full justify-between">
@@ -26,12 +33,24 @@ export const Navbar = ({
           >
             {theme === "light" ? <Moon /> : <Sun />}
           </Button>
-          <Button
-            onClick={() => setSigninModalOpen(true)}
-            className="rounded-full"
-          >
-            Login
-          </Button>
+          {!isAuthenticated ? (
+            <Button
+              onClick={() => setSigninModalOpen(true)}
+              className="rounded-full"
+            >
+              Login
+            </Button>
+          ) : (
+            <Button
+              onClick={() => {
+                signout();
+                router.push("/");
+              }}
+              className="rounded-full"
+            >
+              Logout
+            </Button>
+          )}
         </div>
       </div>
     </div>

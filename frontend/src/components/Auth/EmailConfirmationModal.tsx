@@ -1,28 +1,36 @@
-import { DialogFooter, DialogHeader } from "@/components/ui/dialog";
-import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "next-themes";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Mail } from "lucide-react";
 
-export const EmailConfirmationModal = ({
-  setOpen,
-}: {
-  setOpen: (value: boolean) => void;
-}) => {
+interface Props {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export const EmailConfirmationModal = ({ isOpen, onOpenChange }: Props) => {
   return (
-    <>
-      <DialogHeader>
-        <DialogTitle className="text-lg font-semibold">
-          Verification Email Sent!
-        </DialogTitle>
-        <DialogDescription className="text-sm font-normal text-foreground">
-          {`We've sent a verification email to your email address. Please
-          check your inbox and click the verification link to activate your
-          account.`}
-        </DialogDescription>
-      </DialogHeader>
-      <DialogFooter>
-        <Button onClick={() => setOpen(false)}>Close</Button>
-      </DialogFooter>
-    </>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="border-border max-h-[100vh] overflow-auto rounded-lg w-[95%]">
+        <DialogHeader>
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+            <Mail className="h-6 w-6 text-green-600" />
+          </div>
+          <DialogTitle className="text-center">Check your email</DialogTitle>
+          <DialogDescription className="text-center">
+            We have sent you an email with a link to verify your account. Please
+            check your inbox and follow the instructions.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="mt-4 flex justify-end">
+          <Button onClick={() => onOpenChange(false)}>Close</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
