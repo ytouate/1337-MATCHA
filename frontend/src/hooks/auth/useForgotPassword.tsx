@@ -1,18 +1,15 @@
 import { appAPI } from "@/utils/axios";
 import { useMutation } from "@tanstack/react-query";
+
+import { PasswordResetRequest, APIError } from "@/types/auth";
 import { useToast } from "../use-toast";
 
-interface ForgotPasswordData {
-  email: string;
-}
-
-export const useForgotPassword = () => {
+export function useForgotPassword() {
   const { toast } = useToast();
-
   return useMutation({
-    mutationFn: async (data: ForgotPasswordData) => {
+    mutationFn: async (data: PasswordResetRequest) => {
       const response =
-        await appAPI.auth.forgotPasswordAuthForgotPasswordPost(data);
+        await appAPI.api.forgotPasswordApiAuthForgotPasswordPost(data);
       return response.data;
     },
     onSuccess: () => {
@@ -22,13 +19,13 @@ export const useForgotPassword = () => {
         description: "We've sent you a password reset link",
       });
     },
-    onError: (error: any) => {
+    onError: (error: APIError) => {
       toast({
         variant: "error",
         title: "Uh oh! Something went wrong.",
         description:
-          error?.response?.data?.error || "Failed to send reset link",
+          error?.response?.data?.detail || "Failed to send reset link",
       });
     },
   });
-};
+}

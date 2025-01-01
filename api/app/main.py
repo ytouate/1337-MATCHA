@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 import dotenv
-from .routers.auth import router
+from .routers.auth import router as auth_router
+from .routers.users import router as users_router
+from .routers.upload import router as upload_router
 from fastapi.middleware.cors import CORSMiddleware
 from .helpers.utils import DatabaseHelper
 
@@ -29,4 +31,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router)
+app.include_router(auth_router)
+app.include_router(users_router)
+app.include_router(upload_router)

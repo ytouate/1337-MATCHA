@@ -12,24 +12,27 @@ export const useSignout = () => {
 
   return useMutation({
     mutationFn: async () => {
-      const response = await appAPI.auth.signoutAuthSignoutPost();
+      const response = await appAPI.api.signoutApiAuthSignoutPost();
       return response.data;
     },
     onSuccess: () => {
-      logout();
       queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      router.push("/");
+
+      logout();
+
       toast({
         variant: "success",
         title: "Success",
         description: "Successfully logged out",
       });
+
+      router.replace("/");
     },
     onError: () => {
       toast({
         variant: "error",
         title: "Error",
-        description: "Something went wrong",
+        description: "Failed to logout. Please try again.",
       });
     },
   });

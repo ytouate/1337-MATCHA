@@ -6,7 +6,7 @@ export const useGetMe = () => {
   return useQuery({
     queryKey: ["auth", "me"],
     queryFn: async () => {
-      const response = await appAPI.auth.getMeAuthMeGet();
+      const response = await appAPI.api.getMeApiAuthMeGet();
       return response.data as AuthTypes.User;
     },
     retry: false,

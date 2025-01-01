@@ -63,7 +63,7 @@ export default function ResetPasswordFormPage() {
 
   async function onSubmit(values: ResetPasswordForm) {
     try {
-      await appAPI.auth.resetPasswordAuthResetPasswordTokenPost(token!, {
+      await appAPI.api.resetPasswordApiAuthResetPasswordTokenPost(token!, {
         new_password: values.newPassword,
       });
       toast({
@@ -72,7 +72,7 @@ export default function ResetPasswordFormPage() {
         variant: "success",
       });
       router.push("/");
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to reset password. Please try again.",

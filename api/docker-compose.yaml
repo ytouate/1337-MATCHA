@@ -1,4 +1,4 @@
-version: '3.3'
+version: '3.8'
 
 services:
   app:
@@ -23,14 +23,19 @@ services:
       - 5431:5432
     volumes:
       - match_db:/var/lib/postgresql/data
-  my-adminer:
-    image: adminer:latest
-    container_name: my-adminer
+  storage:
+    image: minio/minio:latest
+    container_name: storage
     ports:
-      - 9090:8080
-    depends_on:
-      - db
-
+      - 9001:9000
+      - 9090:9090
+    command: server /data --console-address ":9090"
+    volumes:
+      - storage:/data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
 
 volumes:
   match_db:
+  storage:

@@ -9,7 +9,7 @@ export const useSignup = (onSuccessCallback?: () => void) => {
 
   return useMutation({
     mutationFn: async (data: SignupData) => {
-      return await appAPI.auth.signupAuthSignupPost(data);
+      return await appAPI.api.signupApiAuthSignupPost(data);
     },
     onSuccess: () => {
       toast({

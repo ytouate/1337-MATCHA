@@ -37,7 +37,12 @@ def get_email_body(file_name, link):
     return template_email.render(link=link)
 
 
-async def send_email(subject: str, email_to: str, link: str, template_name: str = "email_confirmation.html"):
+async def send_email(
+    subject: str,
+    email_to: str,
+    link: str,
+    template_name: str = "email_confirmation.html",
+):
     message = MessageSchema(
         subject=subject,
         recipients=[email_to],
@@ -73,7 +78,9 @@ def get_type(name, type: dict) -> str:
     return f"t_{name}"
 
 
-def generate_jwt_token(type: str, data: dict, expires_delta: timedelta, algorithm="HS256"):
+def generate_jwt_token(
+    type: str, data: dict, expires_delta: timedelta, algorithm="HS256"
+):
     claims = {
         "data": data,
         "type": type,
@@ -151,12 +158,26 @@ class DatabaseHelper:
                 ("NOT NULL", not column.get("is_null", True)),
                 (f"CHECK ({column['name']} <> '')", not column.get("is_blank", True)),
                 (
-                    f"DEFAULT {str(column.get("default", None))}",
+                    f"DEFAULT {str(column.get('default', None))}",
                     column.get("default", None) is not None,
                 ),
                 ("PRIMARY KEY", column.get("is_primary", False)),
                 ("UNIQUE", column.get("is_unique", False)),
             ]
+
+            # Add foreign key constraint if references exist
+            if "references" in column:
+                ref = column["references"]
+                fk_constraint = (
+                    f"REFERENCES {ref['table']}({ref['column']})"
+                    + (
+                        f" ON DELETE {ref['on_delete']}"
+                        if "on_delete" in ref
+                        else "CASCADE"
+                    ),
+                    True,
+                )
+                constraints.append(fk_constraint)
 
             applied_constraints = [
                 constraint for constraint, condition in constraints if condition
@@ -169,7 +190,9 @@ class DatabaseHelper:
     @staticmethod
     def create_table(name: str, columns: List[Column]):
         columns_definition = DatabaseHelper.generate_column_definitions(columns=columns)
-        query = f"CREATE TABLE {name} (\n{",".join(columns_definition)}\n);"
+        query = (
+            f"CREATE TABLE IF NOT EXISTS {name} (\n{",".join(columns_definition)}\n);"
+        )
         DatabaseHelper.run_query(query)
 
     @staticmethod
@@ -180,3 +203,15 @@ class DatabaseHelper:
             if commit:
                 db.connection.commit()
             return result
+
+    @staticmethod
+    def create_tables():
+        # Get table definitions
+        interest_columns = DatabaseHelper.get_table_data("interest.json")
+        user_interest_columns = DatabaseHelper.get_table_data("user_interest.json")
+        image_columns = DatabaseHelper.get_table_data("image.json")
+
+        # Create tables in correct order (interests before user_interests due to foreign key)
+        DatabaseHelper.create_table("interests", interest_columns)
+        DatabaseHelper.create_table("images", image_columns)
+        DatabaseHelper.create_table("user_interests", user_interest_columns)

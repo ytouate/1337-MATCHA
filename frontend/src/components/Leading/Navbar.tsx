@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
 import { useTheme } from "next-themes";
-import { useRouter } from "next/navigation";
 import { Moon, Sun } from "lucide-react";
 import { useSignout } from "@/hooks/auth/useSignout";
 
@@ -14,12 +13,11 @@ interface Props {
 export const Navbar = ({ setSigninModalOpen }: Props) => {
   const { isAuthenticated } = useAuthStore();
   const { mutate: signout } = useSignout();
-  const router = useRouter();
   const { setTheme, theme } = useTheme();
 
   return (
-    <div className="fixed left-0 right-0 p-4">
-      <div className="max-w-[1550px] m-auto flex w-full justify-between">
+    <div className="fixed left-0 right-0 top-0 bg-background z-50">
+      <div className="max-w-[1550px] m-auto flex w-full justify-between p-4">
         <Button className="font-bold" variant={"link"}>
           MATCHA
         </Button>
@@ -41,13 +39,7 @@ export const Navbar = ({ setSigninModalOpen }: Props) => {
               Login
             </Button>
           ) : (
-            <Button
-              onClick={() => {
-                signout();
-                router.push("/");
-              }}
-              className="rounded-full"
-            >
+            <Button onClick={() => signout()} className="rounded-full">
               Logout
             </Button>
           )}

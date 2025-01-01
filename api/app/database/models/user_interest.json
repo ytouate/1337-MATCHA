@@ -1,0 +1,33 @@
+[
+    {
+        "name": "id",
+        "type": {
+            "type": "SERIAL"
+        },
+        "is_primary": true
+    },
+    {
+        "name": "user_id",
+        "type": {
+            "type": "INTEGER"
+        },
+        "is_null": false,
+        "references": {
+            "table": "users",
+            "column": "id",
+            "on_delete": "CASCADE"
+        }
+    },
+    {
+        "name": "interest_id",
+        "type": {
+            "type": "INTEGER"
+        },
+        "is_null": false,
+        "references": {
+            "table": "interests",
+            "column": "id",
+            "on_delete": "CASCADE"
+        }
+    }
+]

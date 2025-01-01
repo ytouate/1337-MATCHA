@@ -9,6 +9,15 @@
  * ---------------------------------------------------------------
  */
 
+/** Body_upload_file_api_upload_post */
+export interface BodyUploadFileApiUploadPost {
+  /**
+   * File
+   * @format binary
+   */
+  file: File;
+}
+
 /** Gender */
 export enum Gender {
   Male = "Male",
@@ -71,6 +80,50 @@ export interface SignupData {
    * @format date
    */
   birthdate: string;
+}
+
+/** UserPut */
+export interface UserPut {
+  /** First Name */
+  first_name: string;
+  /** Last Name */
+  last_name: string;
+  /** Email */
+  email: string;
+  /** Bio */
+  bio: string;
+  gender: Gender;
+  sexual_preference: Gender;
+  /** Latitude */
+  latitude: number;
+  /** Longitude */
+  longitude: number;
+  /** Is Verified */
+  is_verified: boolean;
+  /** Is Profile Completed */
+  is_profile_completed: boolean;
+}
+
+/** UserUpdate */
+export interface UserUpdate {
+  /** First Name */
+  first_name?: string | null;
+  /** Last Name */
+  last_name?: string | null;
+  /** Email */
+  email?: string | null;
+  /** Bio */
+  bio?: string | null;
+  gender?: Gender | null;
+  sexual_preference?: Gender | null;
+  /** Latitude */
+  latitude?: number | null;
+  /** Longitude */
+  longitude?: number | null;
+  /** Is Verified */
+  is_verified?: boolean | null;
+  /** Is Profile Completed */
+  is_profile_completed?: boolean | null;
 }
 
 /** ValidationError */
@@ -224,17 +277,18 @@ export class HttpClient<SecurityDataType = unknown> {
  * API for Matcha dating application
  */
 export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDataType> {
-  auth = {
+  api = {
     /**
-     * No description
+     * @description Create a new user account with username, email, and password
      *
-     * @name SignupAuthSignupPost
-     * @summary Signup
-     * @request POST:/auth/signup
+     * @tags Authentication
+     * @name SignupApiAuthSignupPost
+     * @summary User Registration
+     * @request POST:/api/auth/signup
      */
-    signupAuthSignupPost: (data: SignupData, params: RequestParams = {}) =>
-      this.request<any, HTTPValidationError>({
-        path: `/auth/signup`,
+    signupApiAuthSignupPost: (data: SignupData, params: RequestParams = {}) =>
+      this.request<any, void>({
+        path: `/api/auth/signup`,
         method: "POST",
         body: data,
         type: ContentType.Json,
@@ -243,21 +297,22 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       }),
 
     /**
-     * No description
+     * @description Verify user email using a verification token
      *
-     * @name EmailVerificationAuthEmailVerificationGet
-     * @summary Email Verification
-     * @request GET:/auth/email-verification
+     * @tags Authentication
+     * @name EmailVerificationApiAuthEmailVerificationGet
+     * @summary Verify Email
+     * @request GET:/api/auth/email-verification
      */
-    emailVerificationAuthEmailVerificationGet: (
+    emailVerificationApiAuthEmailVerificationGet: (
       query: {
         /** Token */
         token: string;
       },
       params: RequestParams = {},
     ) =>
-      this.request<any, HTTPValidationError>({
-        path: `/auth/email-verification`,
+      this.request<any, void>({
+        path: `/api/auth/email-verification`,
         method: "GET",
         query: query,
         format: "json",
@@ -265,15 +320,16 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       }),
 
     /**
-     * No description
+     * @description Authenticate user and return access and refresh tokens
      *
-     * @name SigninAuthSigninPost
-     * @summary Signin
-     * @request POST:/auth/signin
+     * @tags Authentication
+     * @name SigninApiAuthSigninPost
+     * @summary User Login
+     * @request POST:/api/auth/signin
      */
-    signinAuthSigninPost: (data: SignInData, params: RequestParams = {}) =>
-      this.request<any, HTTPValidationError>({
-        path: `/auth/signin`,
+    signinApiAuthSigninPost: (data: SignInData, params: RequestParams = {}) =>
+      this.request<any, void>({
+        path: `/api/auth/signin`,
         method: "POST",
         body: data,
         type: ContentType.Json,
@@ -282,15 +338,16 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       }),
 
     /**
-     * No description
+     * @description Send a password reset link to user's email
      *
-     * @name ForgotPasswordAuthForgotPasswordPost
-     * @summary Forgot Password
-     * @request POST:/auth/forgot-password
+     * @tags Authentication
+     * @name ForgotPasswordApiAuthForgotPasswordPost
+     * @summary Request Password Reset
+     * @request POST:/api/auth/forgot-password
      */
-    forgotPasswordAuthForgotPasswordPost: (data: object, params: RequestParams = {}) =>
-      this.request<any, HTTPValidationError>({
-        path: `/auth/forgot-password`,
+    forgotPasswordApiAuthForgotPasswordPost: (data: object, params: RequestParams = {}) =>
+      this.request<any, void>({
+        path: `/api/auth/forgot-password`,
         method: "POST",
         body: data,
         type: ContentType.Json,
@@ -299,30 +356,32 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       }),
 
     /**
-     * No description
+     * @description Validate a password reset token
      *
-     * @name ValidateResetTokenAuthValidateResetTokenTokenGet
-     * @summary Validate Reset Token
-     * @request GET:/auth/validate-reset-token/{token}
+     * @tags Authentication
+     * @name ValidateResetTokenApiAuthValidateResetTokenTokenGet
+     * @summary Validate Password Reset Token
+     * @request GET:/api/auth/validate-reset-token/{token}
      */
-    validateResetTokenAuthValidateResetTokenTokenGet: (token: string, params: RequestParams = {}) =>
-      this.request<any, HTTPValidationError>({
-        path: `/auth/validate-reset-token/${token}`,
+    validateResetTokenApiAuthValidateResetTokenTokenGet: (token: string, params: RequestParams = {}) =>
+      this.request<any, void>({
+        path: `/api/auth/validate-reset-token/${token}`,
         method: "GET",
         format: "json",
         ...params,
       }),
 
     /**
-     * No description
+     * @description Reset user password using a valid reset token
      *
-     * @name ResetPasswordAuthResetPasswordTokenPost
-     * @summary Reset Password
-     * @request POST:/auth/reset-password/{token}
+     * @tags Authentication
+     * @name ResetPasswordApiAuthResetPasswordTokenPost
+     * @summary Confirm Password Reset
+     * @request POST:/api/auth/reset-password/{token}
      */
-    resetPasswordAuthResetPasswordTokenPost: (token: string, data: object, params: RequestParams = {}) =>
-      this.request<any, HTTPValidationError>({
-        path: `/auth/reset-password/${token}`,
+    resetPasswordApiAuthResetPasswordTokenPost: (token: string, data: object, params: RequestParams = {}) =>
+      this.request<any, void>({
+        path: `/api/auth/reset-password/${token}`,
         method: "POST",
         body: data,
         type: ContentType.Json,
@@ -331,31 +390,119 @@ export class Api<SecurityDataType extends unknown> extends HttpClient<SecurityDa
       }),
 
     /**
-     * No description
+     * @description Retrieve the current user's data
      *
-     * @name GetMeAuthMeGet
-     * @summary Get Me
-     * @request GET:/auth/me
+     * @tags Authentication
+     * @name GetMeApiAuthMeGet
+     * @summary Get Current User
+     * @request GET:/api/auth/me
      */
-    getMeAuthMeGet: (params: RequestParams = {}) =>
-      this.request<any, any>({
-        path: `/auth/me`,
+    getMeApiAuthMeGet: (params: RequestParams = {}) =>
+      this.request<any, void>({
+        path: `/api/auth/me`,
         method: "GET",
         format: "json",
         ...params,
       }),
 
     /**
-     * No description
+     * @description Sign out the current user
      *
-     * @name SignoutAuthSignoutPost
-     * @summary Signout
-     * @request POST:/auth/signout
+     * @tags Authentication
+     * @name SignoutApiAuthSignoutPost
+     * @summary Sign Out
+     * @request POST:/api/auth/signout
      */
-    signoutAuthSignoutPost: (params: RequestParams = {}) =>
-      this.request<any, any>({
-        path: `/auth/signout`,
+    signoutApiAuthSignoutPost: (params: RequestParams = {}) =>
+      this.request<any, void>({
+        path: `/api/auth/signout`,
         method: "POST",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Retrieve public profile information for a specific user
+     *
+     * @tags User Management
+     * @name GetUserApiUsersUsernameGet
+     * @summary Get User Profile
+     * @request GET:/api/users/{username}
+     */
+    getUserApiUsersUsernameGet: (username: string, params: RequestParams = {}) =>
+      this.request<any, void>({
+        path: `/api/users/${username}`,
+        method: "GET",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Update profile information for the authenticated user
+     *
+     * @tags User Management
+     * @name PartialUpdateUserApiUsersUsernamePatch
+     * @summary Update User Profile
+     * @request PATCH:/api/users/{username}
+     */
+    partialUpdateUserApiUsersUsernamePatch: (username: string, data: UserUpdate, params: RequestParams = {}) =>
+      this.request<any, void>({
+        path: `/api/users/${username}`,
+        method: "PATCH",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Replace profile information for the authenticated user
+     *
+     * @tags User Management
+     * @name UpdateUserApiUsersUsernamePut
+     * @summary Replace User Profile
+     * @request PUT:/api/users/{username}
+     */
+    updateUserApiUsersUsernamePut: (username: string, data: UserPut, params: RequestParams = {}) =>
+      this.request<any, void>({
+        path: `/api/users/${username}`,
+        method: "PUT",
+        body: data,
+        type: ContentType.Json,
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Delete the authenticated user's profile
+     *
+     * @tags User Management
+     * @name DeleteUserApiUsersUsernameDelete
+     * @summary Delete User Profile
+     * @request DELETE:/api/users/{username}
+     */
+    deleteUserApiUsersUsernameDelete: (username: string, params: RequestParams = {}) =>
+      this.request<any, void>({
+        path: `/api/users/${username}`,
+        method: "DELETE",
+        format: "json",
+        ...params,
+      }),
+
+    /**
+     * @description Upload a single image file with validation
+     *
+     * @tags File Upload
+     * @name UploadFileApiUploadPost
+     * @summary Upload Image
+     * @request POST:/api/upload
+     */
+    uploadFileApiUploadPost: (data: BodyUploadFileApiUploadPost, params: RequestParams = {}) =>
+      this.request<any, void | HTTPValidationError>({
+        path: `/api/upload`,
+        method: "POST",
+        body: data,
+        type: ContentType.FormData,
         format: "json",
         ...params,
       }),

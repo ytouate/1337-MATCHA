@@ -22,11 +22,14 @@ export const ForgotPassword = ({ isOpen, onOpenChange }: Props) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendResetEmail({ email }, {
-      onSuccess: () => {
-        onOpenChange(false);
+    sendResetEmail(
+      { email },
+      {
+        onSuccess: () => {
+          onOpenChange(false);
+        },
       }
-    });
+    );
   };
 
   return (
@@ -35,8 +38,8 @@ export const ForgotPassword = ({ isOpen, onOpenChange }: Props) => {
         <DialogHeader>
           <DialogTitle>Forgot Password</DialogTitle>
           <DialogDescription>
-            Enter your email address and we'll send you a link to reset your
-            password.
+            {`Enter your email address and we'll send you a link to reset your
+            password.`}
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">

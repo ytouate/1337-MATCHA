@@ -6,9 +6,8 @@ import { Navbar } from "@/components/leading/Navbar";
 import { Signin } from "@/components/auth/Signin";
 import { EmailConfirmationModal } from "@/components/auth/EmailConfirmationModal";
 import { useAuthStore } from "@/store/auth";
-import { useGetMe } from "@/hooks/auth/useGetMe";
-import { Loader2 } from "lucide-react";
 import { ForgotPassword } from "@/components/auth/ForgotPassword";
+import { useProfileCompletion } from "@/hooks/profile/useProfileCompletion";
 
 const LeadingPage: FC = () => {
   const [signupModalOpen, setSignupModalOpen] = useState(false);
@@ -16,15 +15,7 @@ const LeadingPage: FC = () => {
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { isAuthenticated } = useAuthStore();
-  const { isLoading } = useGetMe();
-
-  if (isLoading) {
-    return (
-      <div className="h-screen w-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
+  useProfileCompletion();
 
   return (
     <div className="h-screen max-w-[1550px] m-auto">

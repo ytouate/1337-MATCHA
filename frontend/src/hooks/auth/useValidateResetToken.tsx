@@ -9,7 +9,7 @@ export const useValidateResetToken = (token: string) => {
     queryKey: ["validateResetToken", token],
     queryFn: async () => {
       try {
-        await appAPI.auth.validateResetTokenAuthValidateResetTokenTokenGet(
+        await appAPI.api.validateResetTokenApiAuthValidateResetTokenTokenGet(
           token
         );
         router.push(`/reset-password/form?token=${token}`);
