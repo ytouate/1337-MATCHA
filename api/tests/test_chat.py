@@ -20,9 +20,7 @@ class TestChat:
         cursor.fetchone.return_value = {"id": 2}
 
         with _patch_pg(mock_pg_cursor):
-            with patch(
-                "src.services.chat_service.is_blocked", return_value=False
-            ):
+            with patch("src.services.chat_service.is_blocked", return_value=False):
                 with patch(
                     "src.services.chat_service.is_connected", return_value=False
                 ):
@@ -42,9 +40,7 @@ class TestChat:
 
         assert exc.value.status_code == 403
 
-    def test_send_message_creates_notification_and_pushes_chat(
-        self, mock_pg_cursor
-    ):
+    def test_send_message_creates_notification_and_pushes_chat(self, mock_pg_cursor):
         cursor, _, _ = mock_pg_cursor
         cursor.fetchone.side_effect = [
             {"id": 2},
@@ -60,18 +56,14 @@ class TestChat:
         ]
 
         with _patch_pg(mock_pg_cursor):
-            with patch(
-                "src.services.chat_service.is_blocked", return_value=False
-            ):
-                with patch(
-                    "src.services.chat_service.is_connected", return_value=True
-                ):
+            with patch("src.services.chat_service.is_blocked", return_value=False):
+                with patch("src.services.chat_service.is_connected", return_value=True):
                     with patch(
                         "src.services.chat_service.user_has_profile_picture",
                         return_value=True,
                     ):
                         with patch(
-                            "src.services.chat_service.notification_service.create_and_push_notification"
+                            "src.services.notification_service.create_and_push_notification"
                         ) as mock_notify:
                             with patch(
                                 "src.services.chat_service._push_chat_message"

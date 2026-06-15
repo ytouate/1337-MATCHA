@@ -6,6 +6,10 @@ import { Heart, MessageCircle, ShieldBan, Flag } from "lucide-react";
 import { useParams } from "next/navigation";
 import { AuthenticatedLayout } from "@/components/common/AuthenticatedLayout";
 import { ProfileImage } from "@/components/profile/ProfileImage";
+import {
+  PhotoGalleryViewer,
+  usePhotoGalleryViewer,
+} from "@/components/profile/PhotoGalleryViewer";
 import { socialApi, usersApi } from "@/api/client";
 import type { UserProfileResponse } from "@/api/model";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +69,7 @@ export default function ProfilePage() {
 
   const isOwnProfile = currentUser?.username === username;
   const isLiked = profile?.is_liked_by_viewer ?? false;
+  const gallery = usePhotoGalleryViewer();
 
   const content = () => {
     if (isLoading) {
@@ -81,11 +86,28 @@ export default function ProfilePage() {
       return <p className="text-muted-foreground">Profile not found.</p>;
     }
 
+    const photos = (profile.images || []).map((img) => ({
+      url: img.url,
+      is_profile_picture: img.is_profile_picture,
+    }));
+    const profilePhotoIndex = photos.findIndex((photo) => photo.is_profile_picture);
+
     return (
       <div className="space-y-8">
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
           <div className="relative">
-            <div className="relative h-32 w-32 overflow-hidden rounded-full bg-muted">
+            <button
+              type="button"
+              onClick={() => {
+                if (photos.length > 0) {
+                  gallery.openGallery(
+                    profilePhotoIndex >= 0 ? profilePhotoIndex : 0
+                  );
+                }
+              }}
+              className="relative h-32 w-32 overflow-hidden rounded-full bg-muted"
+              disabled={photos.length === 0}
+            >
               {profile.profile_picture ? (
                 <ProfileImage
                   src={profile.profile_picture}
@@ -98,7 +120,7 @@ export default function ProfilePage() {
                   {profile.first_name?.[0]}
                 </div>
               )}
-            </div>
+            </button>
             {!isOwnProfile && currentUser && !isLiked && (
               <Button
                 size="icon"
@@ -235,26 +257,19 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {profile.images && profile.images.length > 0 && (
+        {photos.length > 0 && (
           <div className="space-y-3">
             <h2 className="text-sm font-medium text-muted-foreground">
               Photos
             </h2>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              {profile.images.map((img) => (
-                <div
-                  key={img.url}
-                  className="relative aspect-[3/4] overflow-hidden rounded-lg bg-muted"
-                >
-                  <ProfileImage
-                    src={img.url}
-                    alt="Profile photo"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              ))}
-            </div>
+            <PhotoGalleryViewer photos={photos} showGrid />
+            <PhotoGalleryViewer
+              photos={photos}
+              showGrid={false}
+              open={gallery.open}
+              onOpenChange={gallery.setOpen}
+              initialIndex={gallery.initialIndex}
+            />
           </div>
         )}
 

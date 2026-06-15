@@ -27,6 +27,9 @@ export default function EditProfilePage() {
             <Button variant="outline" size="sm" asChild>
               <Link href="/profile/me/likes">Who liked me</Link>
             </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/profile/me/gallery">Manage gallery</Link>
+            </Button>
           </div>
         </header>
 

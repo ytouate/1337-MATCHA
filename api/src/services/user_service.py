@@ -36,7 +36,7 @@ def _get_user_images(db, user_id: int) -> list[dict]:
         SELECT url, is_profile_picture
         FROM images
         WHERE user_id = %s
-        ORDER BY id
+        ORDER BY sort_order, id
         """,
         (user_id,),
     )
@@ -186,14 +186,14 @@ def _sync_images(
     )
 
     image_insert_query = """
-    INSERT INTO images (user_id, url, is_profile_picture)
-    VALUES (%s, %s, %s)
+    INSERT INTO images (user_id, url, is_profile_picture, sort_order)
+    VALUES (%s, %s, %s, %s)
     """
     for i, image_url in enumerate(normalized_images):
         is_profile = (
             (image_url == normalized_profile) if normalized_profile else (i == 0)
         )
-        db.cursor.execute(image_insert_query, (user_id, image_url, is_profile))
+        db.cursor.execute(image_insert_query, (user_id, image_url, is_profile, i))
 
 
 def _sync_interests(db, user_id: int, interests: list[str]) -> None:

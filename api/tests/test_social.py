@@ -138,9 +138,7 @@ class TestLikes:
         ]
 
         with _patch_pg(mock_pg_cursor):
-            with patch(
-                "src.services.social_service.is_connected", return_value=True
-            ):
+            with patch("src.services.social_service.is_connected", return_value=True):
                 with patch(
                     "src.services.notification_service.create_and_push_notification"
                 ) as mock_notify:
@@ -169,7 +167,11 @@ class TestViews:
 
     def test_record_profile_view_notifies_on_first_view(self, mock_pg_cursor):
         _, db_ctx, _ = mock_pg_cursor
-        db_ctx.cursor.fetchone.return_value = {"viewer_id": 1}
+        db_ctx.cursor.fetchone.side_effect = [
+            {"viewer_id": 1},
+            {"count": 1},
+            {"count": 0},
+        ]
 
         with patch(
             "src.services.notification_service.create_and_push_notification"
@@ -180,7 +182,11 @@ class TestViews:
 
     def test_record_profile_view_skips_notification_on_repeat(self, mock_pg_cursor):
         _, db_ctx, _ = mock_pg_cursor
-        db_ctx.cursor.fetchone.return_value = None
+        db_ctx.cursor.fetchone.side_effect = [
+            None,
+            {"count": 1},
+            {"count": 0},
+        ]
 
         with patch(
             "src.services.notification_service.create_and_push_notification"

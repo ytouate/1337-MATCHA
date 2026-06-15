@@ -33,19 +33,18 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  ImageUpload,
-  type ProfileImageItem,
-} from "@/components/profile/ImageUpload";
+  PhotoGalleryManager,
+  type GalleryImageItem,
+} from "@/components/profile/PhotoGalleryManager";
 import { InterestsSelect } from "@/components/profile/InterestsSelect";
 import { LocationUpdate } from "@/components/profile/LocationUpdate";
 import { useAuthStore } from "@/store/auth";
-import { uploadApi, usersApi } from "@/api/client";
 import { Gender } from "@/api/model";
 import type { UserProfileResponse } from "@/api/model";
 import { useAuthCheck } from "@/hooks/auth/useAuthCheck";
 import { useGetMe } from "@/hooks/auth/useGetMe";
 import { useToast } from "@/hooks/use-toast";
-import { getImageUrl, toStoredImagePath } from "@/lib/utils";
+import { saveGalleryImages, profileImagesToGalleryItems, getProfilePictureIndex } from "@/hooks/profile/useGallerySave";
 
 const formSchema = z.object({
   bio: z.string().min(10, "Bio must be at least 10 characters").max(255),
@@ -64,7 +63,7 @@ interface ProfileFormProps {
 }
 
 export function ProfileForm({ mode = "complete" }: ProfileFormProps) {
-  const [images, setImages] = useState<ProfileImageItem[]>([]);
+  const [images, setImages] = useState<GalleryImageItem[]>([]);
   const [profilePicture, setProfilePicture] = useState<number | null>(null);
   const [initialized, setInitialized] = useState(mode === "complete");
   const { toast } = useToast();
@@ -102,18 +101,12 @@ export function ProfileForm({ mode = "complete" }: ProfileFormProps) {
       location_label: profile.location_label ?? null,
     });
 
-    const existingImages: ProfileImageItem[] = (profile.images || []).map(
-      (img) => ({
-        preview: getImageUrl(img.url),
-        existingPath: toStoredImagePath(img.url),
-      })
-    );
+    const existingImages = profileImagesToGalleryItems(profile.images);
     setImages(existingImages);
 
-    const profilePicIndex = (profile.images || []).findIndex(
-      (img) => img.is_profile_picture
+    setProfilePicture(
+      getProfilePictureIndex(profile.images, profile.profile_picture)
     );
-    setProfilePicture(profilePicIndex >= 0 ? profilePicIndex : null);
     setInitialized(true);
   }, [mode, profile, initialized, form]);
 
@@ -146,68 +139,21 @@ export function ProfileForm({ mode = "complete" }: ProfileFormProps) {
   const completedCount = completionSteps.filter(Boolean).length;
   const progressPercent = (completedCount / completionSteps.length) * 100;
 
-  const handleImageUpload = (file: File) => {
-    if (images.length >= 5) {
-      toast({
-        title: "Limit reached",
-        description: "You can only upload up to 5 images",
-        variant: "error",
-      });
-      return;
-    }
-    const preview = URL.createObjectURL(file);
-    setImages((prev) => [...prev, { file, preview }]);
-  };
-
-  const handleImageRemove = (index: number) => {
-    const removed = images[index];
-    if (removed.file) {
-      URL.revokeObjectURL(removed.preview);
-    }
-    setImages((prev) => prev.filter((_, i) => i !== index));
-    if (profilePicture === index) {
-      setProfilePicture(null);
-    } else if (profilePicture !== null && profilePicture > index) {
-      setProfilePicture(profilePicture - 1);
-    }
-  };
-
   const { mutate: saveProfile, isPending } = useMutation({
     mutationFn: async (data: FormValues) => {
       if (images.length < 1) {
         throw new Error("At least one image is required");
       }
 
-      const newFiles = images.filter((img) => img.file).map((img) => img.file!);
-      let uploadedPaths: string[] = [];
-
-      if (newFiles.length > 0) {
-        const uploadResponse = (await uploadApi.uploadFilesApiUploadPost({
-          files: newFiles,
-        })) as Array<{ url: string }>;
-        uploadedPaths = uploadResponse.map((file) => file.url);
-      }
-
-      let uploadIndex = 0;
-      const imagePaths = images.map((img) => {
-        if (img.existingPath) return img.existingPath;
-        const path = uploadedPaths[uploadIndex];
-        uploadIndex += 1;
-        return path;
-      });
-
-      const picIndex = profilePicture ?? 0;
-      const profilePicturePath = imagePaths[picIndex];
-
-      await usersApi.partialUpdateUserApiUsersUsernamePatch(
+      await saveGalleryImages(
         user?.username || "",
+        images,
+        profilePicture,
         {
           bio: data.bio,
           gender: data.gender as Gender,
           sexual_preference: data.sexual_preference as Gender,
           interests: data.interests,
-          images: imagePaths,
-          profile_picture: profilePicturePath,
           latitude: data.latitude ?? undefined,
           longitude: data.longitude ?? undefined,
           location_label: data.location_label ?? undefined,
@@ -366,10 +312,9 @@ export function ProfileForm({ mode = "complete" }: ProfileFormProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ImageUpload
+              <PhotoGalleryManager
                 images={images}
-                onUpload={handleImageUpload}
-                onRemove={handleImageRemove}
+                onImagesChange={setImages}
                 onSetProfilePicture={setProfilePicture}
                 profilePicture={profilePicture}
               />

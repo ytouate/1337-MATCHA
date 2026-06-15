@@ -35,6 +35,14 @@
         "default": false
     },
     {
+        "name": "sort_order",
+        "type": {
+            "type": "INTEGER"
+        },
+        "is_null": false,
+        "default": "0"
+    },
+    {
         "name": "created_at",
         "type": {
             "type": "TIMESTAMP WITH TIME ZONE"

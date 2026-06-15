@@ -1,7 +1,13 @@
 COMPOSE_COMMAND := docker-compose
 DOCKERFILE := docker-compose.yaml
 
-.PHONY: backend build logs exec down restart psql create-tables seed-interests
+.PHONY: backend build logs exec down restart psql create-tables seed-interests install test
+
+install:
+	poetry install --with dev
+
+test: install
+	poetry run pytest -v
 
 backend:
 	$(COMPOSE_COMMAND) -f $(DOCKERFILE) up --remove-orphans -d
@@ -21,9 +27,6 @@ create-tables:
 
 seed-interests:
 	$(COMPOSE_COMMAND) -f $(DOCKERFILE) exec app poetry run python insert_interests.py
-
-test:
-	poetry run pytest -v
 
 down:
 	$(COMPOSE_COMMAND) -f $(DOCKERFILE) down

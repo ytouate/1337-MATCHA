@@ -51,6 +51,10 @@ def _mock_httpx_client():
     return mock_client
 
 
+def _set_cookie_headers(response) -> list[str]:
+    return response.headers.get_list("set-cookie")
+
+
 class TestOAuthStart:
     def test_oauth_42_redirects_and_sets_state_cookie(self, client):
         response = client.get("/api/auth/oauth/42", follow_redirects=False)
@@ -60,7 +64,10 @@ class TestOAuthStart:
             "https://api.intra.42.fr/oauth/authorize"
         )
         assert "client_id=test-client-id" in response.headers["location"]
-        assert "oauth_state" in response.cookies
+        assert any(
+            header.startswith("oauth_state=")
+            for header in _set_cookie_headers(response)
+        )
 
     def test_oauth_42_returns_503_when_not_configured(self, client, monkeypatch):
         monkeypatch.setattr(oauth_service, "FORTY_TWO_CLIENT_ID", None)
@@ -102,8 +109,9 @@ class TestOAuthCallback:
 
         assert response.status_code == 302
         assert response.headers["location"] == "http://localhost:9998"
-        assert response.cookies.get("access_token") == "jwt-access"
-        assert response.cookies.get("refresh_token") == "jwt-refresh"
+        cookie_headers = " ".join(_set_cookie_headers(response))
+        assert "access_token=jwt-access" in cookie_headers
+        assert "refresh_token=jwt-refresh" in cookie_headers
 
     def test_callback_logs_in_existing_linked_identity(self, client, mock_pg_cursor):
         cursor, _, _ = mock_pg_cursor
@@ -130,7 +138,8 @@ class TestOAuthCallback:
             )
 
         assert response.status_code == 302
-        assert response.cookies.get("access_token") == "jwt-access"
+        cookie_headers = " ".join(_set_cookie_headers(response))
+        assert "access_token=jwt-access" in cookie_headers
         cursor.execute.assert_called()
 
     def test_callback_links_verified_email_account(self, client, mock_pg_cursor):
@@ -161,7 +170,8 @@ class TestOAuthCallback:
             )
 
         assert response.status_code == 302
-        assert response.cookies.get("access_token") == "jwt-access"
+        cookie_headers = " ".join(_set_cookie_headers(response))
+        assert "access_token=jwt-access" in cookie_headers
 
     def test_callback_rejects_invalid_state(self, client):
         response = client.get(
@@ -172,7 +182,8 @@ class TestOAuthCallback:
 
         assert response.status_code == 302
         assert "oauth_error=" in response.headers["location"]
-        assert "access_token" not in response.cookies
+        cookie_headers = " ".join(_set_cookie_headers(response))
+        assert "access_token=" not in cookie_headers
 
     def test_callback_rejects_unverified_email_conflict(self, client, mock_pg_cursor):
         cursor, _, _ = mock_pg_cursor

@@ -205,3 +205,41 @@ class TestImageNormalization:
         assert user_service._image_public_url("user/pic.jpg").endswith(
             "/api/images/user/pic.jpg"
         )
+
+
+class TestSyncImages:
+    def test_sync_images_sets_sort_order_from_array(self, mock_pg_cursor):
+        _, _, db_ctx = mock_pg_cursor
+
+        user_service._sync_images(
+            db_ctx,
+            1,
+            ["c.jpg", "a.jpg", "b.jpg"],
+            "a.jpg",
+        )
+
+        cursor = db_ctx.cursor
+        insert_calls = [
+            call
+            for call in cursor.execute.call_args_list
+            if "INSERT INTO images" in call[0][0]
+        ]
+
+        assert len(insert_calls) == 3
+        assert insert_calls[0][0][1] == (1, "c.jpg", False, 0)
+        assert insert_calls[1][0][1] == (1, "a.jpg", True, 1)
+        assert insert_calls[2][0][1] == (1, "b.jpg", False, 2)
+
+    def test_get_user_images_orders_by_sort_order(self, mock_pg_cursor):
+        _, _, db_ctx = mock_pg_cursor
+        db_ctx.cursor.fetchall.return_value = [
+            {"url": "a.jpg", "is_profile_picture": True},
+            {"url": "b.jpg", "is_profile_picture": False},
+        ]
+
+        images = user_service._get_user_images(db_ctx, 1)
+
+        query = db_ctx.cursor.execute.call_args[0][0]
+        assert "ORDER BY sort_order, id" in query
+        assert images[0]["url"].endswith("/api/images/a.jpg")
+        assert images[0]["is_profile_picture"] is True
