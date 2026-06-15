@@ -2,6 +2,9 @@ import asyncio
 from contextlib import asynccontextmanager
 
 import dotenv
+
+dotenv.load_dotenv()
+
 from fastapi import FastAPI
 
 from src.api.endpoints.auth import router as auth_router
@@ -15,8 +18,6 @@ from src.api.endpoints.users import router as users_router
 from src.api.endpoints.ws import router as ws_router
 from src.middleware.cors import setup_cors
 from src.services import notification_service
-
-dotenv.load_dotenv()
 
 
 @asynccontextmanager

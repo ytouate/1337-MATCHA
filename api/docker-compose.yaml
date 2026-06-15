@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   app:
@@ -6,6 +6,8 @@ services:
     build: .
     ports:
       - 7001:7001
+    env_file:
+      - .env
     environment:
       - PYTHONUNBUFFERED=1
     restart: always

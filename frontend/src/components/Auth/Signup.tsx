@@ -33,6 +33,8 @@ import {
 import { Gender } from "@/api/model";
 import { DatePicker } from "../common/DatePicker";
 import { useSignup } from "@/hooks/auth/useSignup";
+import { FortyTwoAuthButton } from "@/components/auth/FortyTwoAuthButton";
+import { Separator } from "@/components/ui/separator";
 
 interface Props {
   isOpen: boolean;
@@ -232,6 +234,15 @@ export const Signup = ({ isOpen, onOpenChange, onSuccess }: Props) => {
                   />
                 </div>
               ))}
+
+              <div className="relative py-2">
+                <Separator />
+                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">
+                  or
+                </span>
+              </div>
+
+              <FortyTwoAuthButton />
 
               {/* Action Buttons */}
               <div className="flex justify-end space-x-2">

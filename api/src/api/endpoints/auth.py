@@ -1,6 +1,14 @@
 from fastapi import APIRouter, BackgroundTasks, Query, Request, Response
 from fastapi.responses import JSONResponse, RedirectResponse
 
+from src.core.config import (
+    COOKIE_DOMAIN,
+    COOKIE_HTTPONLY,
+    COOKIE_PATH,
+    COOKIE_SAMESITE,
+    COOKIE_SECURE,
+    FRONT_BASE_URL,
+)
 from src.core.deps import get_current_user
 from src.schemas.auth import (
     PasswordResetConfirm,
@@ -8,7 +16,7 @@ from src.schemas.auth import (
     SignInData,
     SignupData,
 )
-from src.services import auth_service
+from src.services import auth_service, oauth_service
 
 router = APIRouter(
     prefix="/api/auth",
@@ -69,3 +77,49 @@ async def get_me(request: Request):
 async def signout(response: Response):
     auth_service.clear_auth_cookies(response)
     return {"message": "Successfully signed out"}
+
+
+@router.get("/oauth/42")
+async def oauth_42_start():
+    redirect_url, state = oauth_service.start_42_oauth()
+    response = RedirectResponse(url=redirect_url, status_code=302)
+    response.set_cookie(
+        key=oauth_service.OAUTH_STATE_COOKIE,
+        value=state,
+        httponly=COOKIE_HTTPONLY,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        domain=COOKIE_DOMAIN,
+        path=COOKIE_PATH,
+        max_age=oauth_service.OAUTH_STATE_MAX_AGE,
+    )
+    return response
+
+
+@router.get("/oauth/42/callback")
+async def oauth_42_callback(
+    request: Request,
+    code: str | None = Query(None),
+    state: str | None = Query(None),
+):
+    stored_state = request.cookies.get(oauth_service.OAUTH_STATE_COOKIE)
+
+    try:
+        _, tokens = oauth_service.complete_42_oauth(code, state, stored_state)
+    except oauth_service.OAuthError as exc:
+        return RedirectResponse(
+            url=oauth_service.build_error_redirect(str(exc)),
+            status_code=302,
+        )
+
+    response = RedirectResponse(url=FRONT_BASE_URL, status_code=302)
+    response.delete_cookie(
+        key=oauth_service.OAUTH_STATE_COOKIE,
+        httponly=COOKIE_HTTPONLY,
+        secure=COOKIE_SECURE,
+        samesite=COOKIE_SAMESITE,
+        domain=COOKIE_DOMAIN,
+        path=COOKIE_PATH,
+    )
+    auth_service.set_auth_cookies(response, tokens)
+    return response

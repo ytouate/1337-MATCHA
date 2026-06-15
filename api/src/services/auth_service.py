@@ -76,7 +76,9 @@ def signin(payload: SignInData) -> tuple[dict, dict[str, str]] | JSONResponse:
         )
         user = db.cursor.fetchone()
 
-    if not user or not verify_password(payload.password, user["password"]):
+    if not user or not user.get("password") or not verify_password(
+        payload.password, user["password"]
+    ):
         return JSONResponse(content={"error": "Invalid credentials"}, status_code=401)
 
     if not user["is_verified"]:

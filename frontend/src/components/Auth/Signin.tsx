@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import React, { useEffect } from "react";
+import React from "react";
 import {
   Form,
   FormControl,
@@ -23,7 +23,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useSignin } from "@/hooks/auth/useSignin";
-import { useRouter } from "next/navigation";
+import { FortyTwoAuthButton } from "@/components/auth/FortyTwoAuthButton";
+import { Separator } from "@/components/ui/separator";
 
 interface Props {
   isOpen: boolean;
@@ -32,8 +33,6 @@ interface Props {
 }
 
 export const Signin = ({ isOpen, onOpenChange, onForgotPassword }: Props) => {
-  const router = useRouter();
-
   const form = useForm<z.infer<typeof signinSchema>>({
     resolver: zodResolver(signinSchema),
     defaultValues: {
@@ -113,6 +112,15 @@ export const Signin = ({ isOpen, onOpenChange, onForgotPassword }: Props) => {
               >
                 Forgot password?
               </Button>
+
+              <div className="relative py-2">
+                <Separator />
+                <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-2 text-xs text-muted-foreground">
+                  or
+                </span>
+              </div>
+
+              <FortyTwoAuthButton />
 
               <div className="flex justify-end space-x-2">
                 <Button

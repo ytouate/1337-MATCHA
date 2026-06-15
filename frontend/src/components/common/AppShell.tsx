@@ -23,6 +23,17 @@ function VerifiedRedirectHandler() {
         description: "Your account is verified. You can now log in.",
       });
       router.replace("/");
+      return;
+    }
+
+    const oauthError = searchParams?.get("oauth_error");
+    if (oauthError) {
+      toast({
+        variant: "error",
+        title: "42 sign in failed",
+        description: oauthError,
+      });
+      router.replace("/");
     }
   }, [searchParams, router, toast]);
 
