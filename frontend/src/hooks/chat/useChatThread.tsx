@@ -1,10 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { ChatMessageResponse } from "@/api/model";
+import { useQueryClient } from "@tanstack/react-query";
+import { notificationsApi } from "@/api/client";
+import type { ChatMessageResponse, NotificationResponse } from "@/api/model";
 import { useChatSocket } from "@/contexts/ChatSocketContext";
 
 export function useChatThread(username: string) {
+  const queryClient = useQueryClient();
   const { isConnected, loadHistory, sendMessage, subscribe } = useChatSocket();
   const [messages, setMessages] = useState<ChatMessageResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,6 +25,52 @@ export function useChatThread(username: string) {
 
   useEffect(() => {
     if (!username) return;
+
+    const markThreadNotificationsRead = async () => {
+      const notifications =
+        queryClient.getQueryData<NotificationResponse[]>(["notifications"]) ??
+        [];
+      const unread = notifications.filter(
+        (notification) =>
+          notification.type === "message" &&
+          !notification.read_at &&
+          notification.actor.username === username
+      );
+
+      if (unread.length === 0) return;
+
+      await Promise.all(
+        unread.map((notification) =>
+          notificationsApi.markNotificationReadApiNotificationsNotificationIdReadPatch(
+            notification.id
+          )
+        )
+      );
+
+      const readAt = new Date().toISOString();
+      queryClient.setQueryData<NotificationResponse[]>(
+        ["notifications"],
+        (current) =>
+          (current ?? []).map((notification) =>
+            unread.some((item) => item.id === notification.id)
+              ? { ...notification, read_at: readAt }
+              : notification
+          )
+      );
+
+      queryClient.setQueryData<{ count: number }>(
+        ["notifications", "unread-count"],
+        (current) => ({
+          count: Math.max(0, (current?.count ?? 0) - unread.length),
+        })
+      );
+    };
+
+    markThreadNotificationsRead().catch(() => {});
+  }, [queryClient, username]);
+
+  useEffect(() => {
+    if (!username || !isConnected) return;
 
     let cancelled = false;
     setIsLoading(true);
@@ -48,7 +97,7 @@ export function useChatThread(username: string) {
     return () => {
       cancelled = true;
     };
-  }, [username, loadHistory]);
+  }, [username, loadHistory, isConnected]);
 
   useEffect(() => {
     if (!username) return;

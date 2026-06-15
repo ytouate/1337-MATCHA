@@ -99,13 +99,7 @@ def create_and_push_notification(
         _schedule_push(recipient_id, notification)
 
 
-def _schedule_push(recipient_id: int, notification: dict) -> None:
-    from src.services.ws_manager import ws_manager
-
-    coro = ws_manager.send_to_user(
-        recipient_id, "notification.new", {"notification": notification}
-    )
-
+def schedule_async(coro) -> None:
     try:
         loop = asyncio.get_running_loop()
         loop.create_task(coro)
@@ -115,6 +109,16 @@ def _schedule_push(recipient_id: int, notification: dict) -> None:
 
     if _app_loop and _app_loop.is_running():
         asyncio.run_coroutine_threadsafe(coro, _app_loop)
+
+
+def _schedule_push(recipient_id: int, notification: dict) -> None:
+    from src.services.ws_manager import ws_manager
+
+    schedule_async(
+        ws_manager.send_to_user(
+            recipient_id, "notification.new", {"notification": notification}
+        )
+    )
 
 
 def _fetch_notification_by_id(db, notification_id: int) -> Optional[dict]:

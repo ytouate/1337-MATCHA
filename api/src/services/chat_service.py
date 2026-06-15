@@ -133,18 +133,13 @@ def send_message(sender_id: int, receiver_username: str, body: str) -> dict:
 def _push_chat_message(
     recipient_id: int, peer_username: str, message: dict
 ) -> None:
-    import asyncio
-
+    from src.services.notification_service import schedule_async
     from src.services.ws_manager import ws_manager
 
-    try:
-        loop = asyncio.get_running_loop()
-        loop.create_task(
-            ws_manager.send_to_user(
-                recipient_id,
-                "chat.message",
-                {"username": peer_username, "message": message},
-            )
+    schedule_async(
+        ws_manager.send_to_user(
+            recipient_id,
+            "chat.message",
+            {"username": peer_username, "message": message},
         )
-    except RuntimeError:
-        pass
+    )

@@ -10,8 +10,10 @@ import {
   type ReactNode,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/auth";
 import type { ChatMessageResponse, NotificationResponse } from "@/api/model";
+import { getActiveChatUsername } from "@/lib/messageNotifications";
 
 type WsEvent =
   | { event: "chat.history"; data: { username: string; messages: ChatMessageResponse[] } }
@@ -30,9 +32,33 @@ interface ChatSocketContextValue {
       onError?: (detail: string) => void;
     }
   ) => () => void;
+  subscribeNotifications: (
+    handler: (notification: NotificationResponse) => void
+  ) => () => void;
 }
 
 const ChatSocketContext = createContext<ChatSocketContextValue | null>(null);
+
+function waitForAuth(): Promise<void> {
+  if (useAuthStore.getState().isAuthenticated) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      unsub();
+      reject(new Error("Authentication timeout"));
+    }, 10000);
+
+    const unsub = useAuthStore.subscribe((state) => {
+      if (state.isAuthenticated) {
+        clearTimeout(timeout);
+        unsub();
+        resolve();
+      }
+    });
+  });
+}
 
 function getWsUrl() {
   if (typeof window !== "undefined") {
@@ -47,8 +73,10 @@ function getWsUrl() {
 export function ChatSocketProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuthStore();
   const queryClient = useQueryClient();
+  const pathname = usePathname();
   const socketRef = useRef<WebSocket | null>(null);
   const isAuthenticatedRef = useRef(isAuthenticated);
+  const activeChatUsernameRef = useRef<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const subscribersRef = useRef<
     Map<
@@ -71,11 +99,15 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
   const pendingSendRef = useRef<
     Map<string, { resolve: () => void; reject: (error: Error) => void }>
   >(new Map());
+  const notificationSubscribersRef = useRef<
+    Set<(notification: NotificationResponse) => void>
+  >(new Set());
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
   const connectRef = useRef<() => void>(() => {});
 
   isAuthenticatedRef.current = isAuthenticated;
+  activeChatUsernameRef.current = getActiveChatUsername(pathname);
 
   const notifyThread = useCallback(
     (
@@ -118,6 +150,9 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
 
       if (payload.event === "notification.new") {
         const { notification } = payload.data;
+        const isViewingMessageThread =
+          notification.type === "message" &&
+          activeChatUsernameRef.current === notification.actor.username;
 
         queryClient.setQueryData<NotificationResponse[]>(
           ["notifications"],
@@ -129,12 +164,16 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
           }
         );
 
-        if (!notification.read_at) {
+        if (!notification.read_at && !isViewingMessageThread) {
           queryClient.setQueryData<{ count: number }>(
             ["notifications", "unread-count"],
             (current) => ({ count: (current?.count ?? 0) + 1 })
           );
         }
+
+        notificationSubscribersRef.current.forEach((handler) => {
+          handler(notification);
+        });
         return;
       }
 
@@ -258,6 +297,9 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
   }, [connect, disconnect, isAuthenticated]);
 
   const waitForSocket = useCallback(async () => {
+    await waitForAuth();
+    isAuthenticatedRef.current = useAuthStore.getState().isAuthenticated;
+
     if (socketRef.current?.readyState === WebSocket.OPEN) {
       return;
     }
@@ -272,43 +314,73 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
 
     await new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(
-        () => reject(new Error("WebSocket connection timeout")),
+        () => {
+          cleanup();
+          reject(new Error("WebSocket connection timeout"));
+        },
         10000
       );
+
+      let socketListener: WebSocket | null = null;
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+        unsubAuth();
+        if (socketListener) {
+          socketListener.removeEventListener("open", onOpen);
+          socketListener.removeEventListener("close", onClose);
+        }
+      };
+
+      const onOpen = () => {
+        cleanup();
+        resolve();
+      };
+
+      const onClose = () => {
+        cleanup();
+        reject(new Error("WebSocket is not connected"));
+      };
+
+      const attachToSocket = (socket: WebSocket) => {
+        if (socketListener === socket) return;
+        if (socketListener) {
+          socketListener.removeEventListener("open", onOpen);
+          socketListener.removeEventListener("close", onClose);
+        }
+        socketListener = socket;
+        socket.addEventListener("open", onOpen, { once: true });
+        socket.addEventListener("close", onClose, { once: true });
+      };
 
       const tryResolve = () => {
         const socket = socketRef.current;
         if (socket?.readyState === WebSocket.OPEN) {
-          clearTimeout(timeout);
+          cleanup();
           resolve();
           return true;
         }
+        if (socket) {
+          attachToSocket(socket);
+        }
         return false;
       };
+
+      const unsubAuth = useAuthStore.subscribe((state) => {
+        if (!state.isAuthenticated) return;
+        isAuthenticatedRef.current = true;
+        connectRef.current();
+        tryResolve();
+      });
 
       if (tryResolve()) {
         return;
       }
 
-      const socket = socketRef.current;
-      if (!socket) {
-        clearTimeout(timeout);
-        reject(new Error("WebSocket is not connected"));
-        return;
+      if (!socketRef.current) {
+        connectRef.current();
+        tryResolve();
       }
-
-      const onOpen = () => {
-        clearTimeout(timeout);
-        resolve();
-      };
-
-      const onClose = () => {
-        clearTimeout(timeout);
-        reject(new Error("WebSocket is not connected"));
-      };
-
-      socket.addEventListener("open", onOpen, { once: true });
-      socket.addEventListener("close", onClose, { once: true });
     });
   }, []);
 
@@ -386,9 +458,25 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const subscribeNotifications = useCallback(
+    (handler: (notification: NotificationResponse) => void) => {
+      notificationSubscribersRef.current.add(handler);
+      return () => {
+        notificationSubscribersRef.current.delete(handler);
+      };
+    },
+    []
+  );
+
   return (
     <ChatSocketContext.Provider
-      value={{ isConnected, sendMessage, loadHistory, subscribe }}
+      value={{
+        isConnected,
+        sendMessage,
+        loadHistory,
+        subscribe,
+        subscribeNotifications,
+      }}
     >
       {children}
     </ChatSocketContext.Provider>

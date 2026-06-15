@@ -7,6 +7,10 @@ import { notificationsApi } from "@/api/client";
 import type { NotificationResponse } from "@/api/model";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  getNotificationHref,
+  getNotificationListLabel,
+} from "@/lib/notificationPresentation";
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
@@ -22,6 +26,7 @@ export default function NotificationsPage() {
       notificationsApi.markAllNotificationsReadApiNotificationsReadAllPost(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.setQueryData(["notifications", "unread-count"], { count: 0 });
     },
   });
 
@@ -50,7 +55,14 @@ export default function NotificationsPage() {
             <p className="text-sm text-muted-foreground">No notifications yet.</p>
           )}
 
-          {notifications.map((notification) => (
+          {notifications.map((notification) => {
+            const preview =
+              notification.type === "message" &&
+              typeof notification.payload?.preview === "string"
+                ? notification.payload.preview
+                : null;
+
+            return (
             <div
               key={notification.id}
               className={`rounded-lg border p-4 ${
@@ -59,20 +71,24 @@ export default function NotificationsPage() {
             >
               <p className="text-sm">
                 <Link
-                  href={`/profile/${notification.actor.username}`}
+                  href={getNotificationHref(notification)}
                   className="font-medium hover:underline"
                 >
                   {notification.actor.first_name} {notification.actor.last_name}
                 </Link>{" "}
-                {notification.type === "like" && "liked your profile"}
-                {notification.type === "connection" && "is now connected with you"}
-                {notification.type === "message" && "sent you a message"}
+                {getNotificationListLabel(notification)}
               </p>
+              {preview && (
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                  {preview}
+                </p>
+              )}
               <p className="mt-1 text-xs text-muted-foreground">
                 {new Date(notification.created_at).toLocaleString()}
               </p>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </AuthenticatedLayout>

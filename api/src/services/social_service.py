@@ -69,24 +69,35 @@ def record_profile_view(viewer_id: int, viewed_id: int, db=None) -> None:
 
     if db is None:
         with PgDatabase() as owned_db:
-            _insert_view(owned_db, viewer_id, viewed_id)
+            if _insert_view(owned_db, viewer_id, viewed_id):
+                from src.services import notification_service
+
+                notification_service.create_and_push_notification(
+                    viewed_id, viewer_id, "view", {}
+                )
             recalculate_fame_rating(owned_db, viewed_id)
         return
 
-    _insert_view(db, viewer_id, viewed_id)
+    if _insert_view(db, viewer_id, viewed_id):
+        from src.services import notification_service
+
+        notification_service.create_and_push_notification(
+            viewed_id, viewer_id, "view", {}
+        )
     recalculate_fame_rating(db, viewed_id)
 
 
-def _insert_view(db, viewer_id: int, viewed_id: int) -> None:
+def _insert_view(db, viewer_id: int, viewed_id: int) -> bool:
     db.cursor.execute(
         """
         INSERT INTO user_views (viewer_id, viewed_id)
         VALUES (%s, %s)
-        ON CONFLICT (viewer_id, viewed_id) DO UPDATE
-        SET viewed_at = CURRENT_TIMESTAMP
+        ON CONFLICT (viewer_id, viewed_id) DO NOTHING
+        RETURNING viewer_id
         """,
         (viewer_id, viewed_id),
     )
+    return db.cursor.fetchone() is not None
 
 
 def like_user(liker_id: int, liked_username: str) -> dict:
@@ -121,9 +132,11 @@ def like_user(liker_id: int, liked_username: str) -> dict:
             INSERT INTO user_likes (liker_id, liked_id)
             VALUES (%s, %s)
             ON CONFLICT (liker_id, liked_id) DO NOTHING
+            RETURNING liker_id
             """,
             (liker_id, liked["id"]),
         )
+        new_like = db.cursor.fetchone() is not None
         fame_rating = recalculate_fame_rating(db, liked["id"])
 
         db.cursor.execute(
@@ -135,11 +148,12 @@ def like_user(liker_id: int, liked_username: str) -> dict:
 
     from src.services import notification_service
 
-    notification_service.create_and_push_notification(
-        liked_id, liker_id, "like", {}
-    )
+    if new_like:
+        notification_service.create_and_push_notification(
+            liked_id, liker_id, "like", {}
+        )
 
-    if now_connected and not was_connected:
+    if new_like and now_connected and not was_connected:
         notification_service.create_and_push_notification(
             liker_id, liked_id, "connection", {"username": liked_username}
         )
@@ -165,6 +179,8 @@ def unlike_user(liker_id: int, liked_username: str) -> dict:
         if not liked:
             raise HTTPException(status_code=404, detail="User not found")
 
+        was_connected = is_connected(db, liker_id, liked["id"])
+
         db.cursor.execute(
             """
             DELETE FROM user_likes
@@ -175,6 +191,11 @@ def unlike_user(liker_id: int, liked_username: str) -> dict:
         fame_rating = recalculate_fame_rating(db, liked["id"])
 
         from src.services import notification_service
+
+        if was_connected:
+            notification_service.create_and_push_notification(
+                liked["id"], liker_id, "unlike", {}
+            )
 
         notification_service.delete_notifications_between(db, liker_id, liked["id"])
 

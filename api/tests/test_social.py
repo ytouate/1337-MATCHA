@@ -39,6 +39,7 @@ class TestLikes:
         cursor, _, _ = mock_pg_cursor
         cursor.fetchone.side_effect = [
             {"id": 2},
+            {"liker_id": 1},
             {"count": 1},
             {"count": 1},
             {"username": "liker"},
@@ -59,10 +60,96 @@ class TestLikes:
                     ):
                         with patch(
                             "src.services.notification_service.create_and_push_notification"
-                        ):
+                        ) as mock_notify:
                             result = social_service.like_user(1, "otheruser")
 
         assert result["fame_rating"] == 2
+        mock_notify.assert_called_once_with(2, 1, "like", {})
+
+    def test_like_user_skips_notification_on_duplicate(self, mock_pg_cursor):
+        cursor, _, _ = mock_pg_cursor
+        cursor.fetchone.side_effect = [
+            {"id": 2},
+            None,
+            {"count": 1},
+            {"count": 1},
+            {"username": "liker"},
+        ]
+
+        with _patch_pg(mock_pg_cursor):
+            with patch(
+                "src.services.social_service.user_has_profile_picture",
+                return_value=True,
+            ):
+                with patch(
+                    "src.services.moderation_service.is_blocked",
+                    return_value=False,
+                ):
+                    with patch(
+                        "src.services.social_service.is_connected",
+                        return_value=False,
+                    ):
+                        with patch(
+                            "src.services.notification_service.create_and_push_notification"
+                        ) as mock_notify:
+                            social_service.like_user(1, "otheruser")
+
+        mock_notify.assert_not_called()
+
+    def test_like_user_pushes_connection_on_mutual_like(self, mock_pg_cursor):
+        cursor, _, _ = mock_pg_cursor
+        cursor.fetchone.side_effect = [
+            {"id": 2},
+            {"liker_id": 1},
+            {"count": 1},
+            {"count": 1},
+            {"username": "liker"},
+        ]
+
+        with _patch_pg(mock_pg_cursor):
+            with patch(
+                "src.services.social_service.user_has_profile_picture",
+                return_value=True,
+            ):
+                with patch(
+                    "src.services.moderation_service.is_blocked",
+                    return_value=False,
+                ):
+                    with patch(
+                        "src.services.social_service.is_connected",
+                        side_effect=[False, True],
+                    ):
+                        with patch(
+                            "src.services.notification_service.create_and_push_notification"
+                        ) as mock_notify:
+                            social_service.like_user(1, "otheruser")
+
+        assert mock_notify.call_count == 3
+        mock_notify.assert_any_call(2, 1, "like", {})
+        mock_notify.assert_any_call(1, 2, "connection", {"username": "otheruser"})
+        mock_notify.assert_any_call(2, 1, "connection", {"username": "liker"})
+
+    def test_unlike_user_notifies_when_connected(self, mock_pg_cursor):
+        cursor, _, _ = mock_pg_cursor
+        cursor.fetchone.side_effect = [
+            {"id": 2},
+            {"count": 1},
+            {"count": 1},
+        ]
+
+        with _patch_pg(mock_pg_cursor):
+            with patch(
+                "src.services.social_service.is_connected", return_value=True
+            ):
+                with patch(
+                    "src.services.notification_service.create_and_push_notification"
+                ) as mock_notify:
+                    with patch(
+                        "src.services.notification_service.delete_notifications_between"
+                    ):
+                        social_service.unlike_user(1, "otheruser")
+
+        mock_notify.assert_called_once_with(2, 1, "unlike", {})
 
     def test_is_connected_when_mutual_likes(self, mock_pg_cursor):
         cursor, _, _ = mock_pg_cursor
@@ -79,6 +166,28 @@ class TestViews:
             social_service.record_profile_view(1, 1, db=MagicMock())
 
         cursor.execute.assert_not_called()
+
+    def test_record_profile_view_notifies_on_first_view(self, mock_pg_cursor):
+        _, db_ctx, _ = mock_pg_cursor
+        db_ctx.cursor.fetchone.return_value = {"viewer_id": 1}
+
+        with patch(
+            "src.services.notification_service.create_and_push_notification"
+        ) as mock_notify:
+            social_service.record_profile_view(1, 2, db=db_ctx)
+
+        mock_notify.assert_called_once_with(2, 1, "view", {})
+
+    def test_record_profile_view_skips_notification_on_repeat(self, mock_pg_cursor):
+        _, db_ctx, _ = mock_pg_cursor
+        db_ctx.cursor.fetchone.return_value = None
+
+        with patch(
+            "src.services.notification_service.create_and_push_notification"
+        ) as mock_notify:
+            social_service.record_profile_view(1, 2, db=db_ctx)
+
+        mock_notify.assert_not_called()
 
     def test_get_profile_viewers_returns_summaries(self, mock_pg_cursor):
         cursor, _, _ = mock_pg_cursor
