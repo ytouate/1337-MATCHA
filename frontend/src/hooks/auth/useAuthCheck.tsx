@@ -4,14 +4,16 @@ import { useGetMe } from './useGetMe';
 
 export const useAuthCheck = () => {
   const { setUser } = useAuthStore();
-  const { data: user, isError } = useGetMe();
+  const { data: user, isError, isFetched, isFetching } = useGetMe();
 
   useEffect(() => {
     if (user) {
       setUser(user);
+      return;
     }
-    if (isError) {
+
+    if (isFetched && isError && !isFetching) {
       setUser(null);
     }
-  }, [user, isError, setUser]);
+  }, [user, isError, isFetched, isFetching, setUser]);
 };

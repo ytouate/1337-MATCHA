@@ -8,16 +8,21 @@
 import type { Gender } from './gender';
 
 export interface UserPut {
-  bio?: string | null;
-  gender?: Gender | null;
-  sexual_preference?: string | null;
+  first_name: string;
+  last_name: string;
+  email: string;
+  /**
+     * @minLength 10
+     * @maxLength 255
+     */
+  bio: string;
+  gender: Gender;
+  sexual_preference: Gender;
   interests?: string[] | null;
   images?: string[] | null;
   profile_picture?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
+  latitude: number;
+  longitude: number;
+  location_label?: string | null;
   username: string;
-  email: string;
-  first_name: string;
-  last_name: string;
 }

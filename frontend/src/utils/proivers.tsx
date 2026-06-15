@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useState } from "react";
 import { useAuthCheck } from "@/hooks/auth/useAuthCheck";
 import { AuthModalProvider } from "@/contexts/AuthModalContext";
+import { ChatSocketProvider } from "@/contexts/ChatSocketContext";
 import { AppShell } from "@/components/common/AppShell";
 
 function AuthProvider({ children }: { children: ReactNode }) {
@@ -34,7 +35,9 @@ export default function Providers({ children }: { children: ReactNode }) {
       >
         <AuthProvider>
           <AuthModalProvider>
-            <AppShell>{children}</AppShell>
+            <ChatSocketProvider>
+              <AppShell>{children}</AppShell>
+            </ChatSocketProvider>
           </AuthModalProvider>
         </AuthProvider>
       </ThemeProvider>

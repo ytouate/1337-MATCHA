@@ -1,0 +1,41 @@
+[
+  {
+    "name": "id",
+    "type": { "type": "SERIAL" },
+    "is_primary": true,
+    "is_null": false
+  },
+  {
+    "name": "recipient_id",
+    "type": { "type": "INTEGER" },
+    "is_null": false,
+    "references": { "table": "users", "column": "id", "on_delete": "CASCADE" }
+  },
+  {
+    "name": "actor_id",
+    "type": { "type": "INTEGER" },
+    "is_null": false,
+    "references": { "table": "users", "column": "id", "on_delete": "CASCADE" }
+  },
+  {
+    "name": "type",
+    "type": { "type": "VARCHAR(32)" },
+    "is_null": false
+  },
+  {
+    "name": "payload",
+    "type": { "type": "VARCHAR(2000)" },
+    "is_null": true
+  },
+  {
+    "name": "read_at",
+    "type": { "type": "TIMESTAMP" },
+    "is_null": true
+  },
+  {
+    "name": "created_at",
+    "type": { "type": "TIMESTAMP" },
+    "is_null": false,
+    "default": "CURRENT_TIMESTAMP"
+  }
+]

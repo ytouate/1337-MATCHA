@@ -8,12 +8,16 @@
 import type { Gender } from './gender';
 
 export interface UserUpdate {
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
   bio?: string | null;
   gender?: Gender | null;
-  sexual_preference?: string | null;
+  sexual_preference?: Gender | null;
   interests?: string[] | null;
   images?: string[] | null;
   profile_picture?: string | null;
   latitude?: number | null;
   longitude?: number | null;
+  location_label?: string | null;
 }

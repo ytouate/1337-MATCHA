@@ -22,12 +22,6 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
   export const getAuthentication = () => {
 /**
- * Register a new user:
- * - Validate user data
- * - Check if username or email already exists
- * - Resend verification email if account exists but is unverified
- * - Create user account
- * - Send verification email
  * @summary Signup
  */
 const signupApiAuthSignupPost = (
@@ -41,10 +35,6 @@ const signupApiAuthSignupPost = (
       options);
     }
   /**
- * Authenticate user:
- * - Validate credentials
- * - Generate JWT tokens
- * - Return tokens for authentication
  * @summary Signin
  */
 const signinApiAuthSigninPost = (
@@ -58,10 +48,6 @@ const signinApiAuthSigninPost = (
       options);
     }
   /**
- * Verify user email:
- * - Validate verification token
- * - Mark email as verified
- * - Activate user account
  * @summary Email Verification
  */
 const emailVerificationApiAuthEmailVerificationGet = (
@@ -74,10 +60,6 @@ const emailVerificationApiAuthEmailVerificationGet = (
       options);
     }
   /**
- * Initiate password reset process:
- * - Verify email exists
- * - Generate reset token
- * - Send reset link via email
  * @summary Forgot Password
  */
 const forgotPasswordApiAuthForgotPasswordPost = (
@@ -91,9 +73,6 @@ const forgotPasswordApiAuthForgotPasswordPost = (
       options);
     }
   /**
- * Validate password reset token:
- * - Check token validity
- * - Return success if token is valid
  * @summary Validate Reset Token
  */
 const validateResetTokenApiAuthValidateResetTokenTokenGet = (
@@ -105,10 +84,6 @@ const validateResetTokenApiAuthValidateResetTokenTokenGet = (
       options);
     }
   /**
- * Complete password reset:
- * - Validate reset token
- * - Update user password
- * - Invalidate reset token
  * @summary Reset Password
  */
 const resetPasswordApiAuthResetPasswordTokenPost = (
@@ -123,9 +98,6 @@ const resetPasswordApiAuthResetPasswordTokenPost = (
       options);
     }
   /**
- * Get current user:
- * - Retrieve user data from database
- * - Return user data
  * @summary Get Me
  */
 const getMeApiAuthMeGet = (
@@ -137,9 +109,6 @@ const getMeApiAuthMeGet = (
       options);
     }
   /**
- * Sign out:
- * - Delete access and refresh tokens
- * - Return success
  * @summary Signout
  */
 const signoutApiAuthSignoutPost = (

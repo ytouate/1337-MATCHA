@@ -215,31 +215,14 @@ def reset_password(token: str, payload: PasswordResetConfirm) -> dict:
 
 
 def get_current_user_profile(user_data: dict[str, Any]) -> dict:
+    from src.services import user_service
+    from src.services.presence_service import touch_last_seen
+    from src.db.database import PgDatabase
+
     with PgDatabase() as db:
-        db.cursor.execute(
-            """
-            SELECT
-                id, email, username, first_name, last_name, gender,
-                bio, sexual_preference, latitude, longitude, is_verified,
-                CASE
-                    WHEN bio IS NOT NULL
-                    AND sexual_preference IS NOT NULL
-                    AND latitude IS NOT NULL
-                    AND longitude IS NOT NULL
-                    THEN true
-                    ELSE false
-                END as is_profile_completed
-            FROM users
-            WHERE id = %s
-            """,
-            (user_data["user_id"],),
-        )
-        user = db.cursor.fetchone()
+        touch_last_seen(db, user_data["user_id"])
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    return user
+    return user_service.get_user_profile_by_id(user_data["user_id"])
 
 
 def clear_auth_cookies(response: Response) -> None:

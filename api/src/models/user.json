@@ -67,6 +67,12 @@
         }
     },
     {
+        "name": "location_label",
+        "type": {
+            "type": "VARCHAR(128)"
+        }
+    },
+    {
         "name": "is_verified",
         "type": {
             "type": "BOOLEAN"
@@ -113,6 +119,12 @@
         },
         "default": "0",
         "is_null": false
+    },
+    {
+        "name": "last_seen_at",
+        "type": {
+            "type": "TIMESTAMP"
+        }
     },
     {
         "name": "created_at",

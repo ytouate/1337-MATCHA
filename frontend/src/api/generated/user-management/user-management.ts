@@ -6,6 +6,9 @@
  * OpenAPI spec version: 1.0.0
  */
 import type {
+  GetSuggestionsApiUsersSuggestionsGetParams,
+  SuggestionListResponse,
+  UserProfileResponse,
   UserPut,
   UserUpdate
 } from '../../model';
@@ -19,13 +22,50 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
   export const getUserManagement = () => {
 /**
+ * Search and browse profiles matching mutual preferences. Supports filtering by age, fame, distance, and interest tags, with sorting by age, location, fame, or shared interests.
+ * @summary Advanced profile search
+ */
+const getSuggestionsApiUsersSuggestionsGet = (
+    params?: GetSuggestionsApiUsersSuggestionsGetParams,
+ options?: SecondParameter<typeof customInstance<SuggestionListResponse>>,) => {
+      return customInstance<SuggestionListResponse>(
+      {url: `/api/users/suggestions`, method: 'GET',
+        params
+    },
+      options);
+    }
+  /**
+ * List users who viewed the authenticated user's profile
+ * @summary Get profile viewers
+ */
+const getMyViewersApiUsersMeViewersGet = (
+
+ options?: SecondParameter<typeof customInstance<unknown>>,) => {
+      return customInstance<unknown>(
+      {url: `/api/users/me/viewers`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * List users who liked the authenticated user's profile
+ * @summary Get users who liked me
+ */
+const getMyLikesApiUsersMeLikesGet = (
+
+ options?: SecondParameter<typeof customInstance<unknown>>,) => {
+      return customInstance<unknown>(
+      {url: `/api/users/me/likes`, method: 'GET'
+    },
+      options);
+    }
+  /**
  * Retrieve public profile information for a specific user
  * @summary Get User Profile
  */
 const getUserApiUsersUsernameGet = (
     username: string,
- options?: SecondParameter<typeof customInstance<unknown>>,) => {
-      return customInstance<unknown>(
+ options?: SecondParameter<typeof customInstance<UserProfileResponse>>,) => {
+      return customInstance<UserProfileResponse>(
       {url: `/api/users/${username}`, method: 'GET'
     },
       options);
@@ -37,8 +77,8 @@ const getUserApiUsersUsernameGet = (
 const partialUpdateUserApiUsersUsernamePatch = (
     username: string,
     userUpdate: BodyType<UserUpdate>,
- options?: SecondParameter<typeof customInstance<unknown>>,) => {
-      return customInstance<unknown>(
+ options?: SecondParameter<typeof customInstance<UserProfileResponse>>,) => {
+      return customInstance<UserProfileResponse>(
       {url: `/api/users/${username}`, method: 'PATCH',
       headers: {'Content-Type': 'application/json', },
       data: userUpdate
@@ -52,8 +92,8 @@ const partialUpdateUserApiUsersUsernamePatch = (
 const updateUserApiUsersUsernamePut = (
     username: string,
     userPut: BodyType<UserPut>,
- options?: SecondParameter<typeof customInstance<unknown>>,) => {
-      return customInstance<unknown>(
+ options?: SecondParameter<typeof customInstance<UserProfileResponse>>,) => {
+      return customInstance<UserProfileResponse>(
       {url: `/api/users/${username}`, method: 'PUT',
       headers: {'Content-Type': 'application/json', },
       data: userPut
@@ -72,8 +112,35 @@ const deleteUserApiUsersUsernameDelete = (
     },
       options);
     }
-  return {getUserApiUsersUsernameGet,partialUpdateUserApiUsersUsernamePatch,updateUserApiUsersUsernamePut,deleteUserApiUsersUsernameDelete}};
+  /**
+ * @summary Like a user
+ */
+const likeUserApiUsersUsernameLikePost = (
+    username: string,
+ options?: SecondParameter<typeof customInstance<unknown>>,) => {
+      return customInstance<unknown>(
+      {url: `/api/users/${username}/like`, method: 'POST'
+    },
+      options);
+    }
+  /**
+ * @summary Unlike a user
+ */
+const unlikeUserApiUsersUsernameLikeDelete = (
+    username: string,
+ options?: SecondParameter<typeof customInstance<unknown>>,) => {
+      return customInstance<unknown>(
+      {url: `/api/users/${username}/like`, method: 'DELETE'
+    },
+      options);
+    }
+  return {getSuggestionsApiUsersSuggestionsGet,getMyViewersApiUsersMeViewersGet,getMyLikesApiUsersMeLikesGet,getUserApiUsersUsernameGet,partialUpdateUserApiUsersUsernamePatch,updateUserApiUsersUsernamePut,deleteUserApiUsersUsernameDelete,likeUserApiUsersUsernameLikePost,unlikeUserApiUsersUsernameLikeDelete}};
+export type GetSuggestionsApiUsersSuggestionsGetResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUserManagement>['getSuggestionsApiUsersSuggestionsGet']>>>
+export type GetMyViewersApiUsersMeViewersGetResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUserManagement>['getMyViewersApiUsersMeViewersGet']>>>
+export type GetMyLikesApiUsersMeLikesGetResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUserManagement>['getMyLikesApiUsersMeLikesGet']>>>
 export type GetUserApiUsersUsernameGetResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUserManagement>['getUserApiUsersUsernameGet']>>>
 export type PartialUpdateUserApiUsersUsernamePatchResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUserManagement>['partialUpdateUserApiUsersUsernamePatch']>>>
 export type UpdateUserApiUsersUsernamePutResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUserManagement>['updateUserApiUsersUsernamePut']>>>
 export type DeleteUserApiUsersUsernameDeleteResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUserManagement>['deleteUserApiUsersUsernameDelete']>>>
+export type LikeUserApiUsersUsernameLikePostResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUserManagement>['likeUserApiUsersUsernameLikePost']>>>
+export type UnlikeUserApiUsersUsernameLikeDeleteResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getUserManagement>['unlikeUserApiUsersUsernameLikeDelete']>>>

@@ -7,6 +7,7 @@ export interface User {
   gender: "Male" | "Female";
   latitude: number | null;
   longitude: number | null;
+  location_label?: string | null;
   bio: string | null;
   sexual_preference: "Male" | "Female";
   is_verified: boolean;

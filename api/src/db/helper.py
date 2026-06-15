@@ -149,6 +149,10 @@ class DatabaseHelper:
         user_columns = DatabaseHelper.get_table_data("user.json")
         user_views = DatabaseHelper.get_table_data("user_view.json")
         user_likes = DatabaseHelper.get_table_data("user_like.json")
+        user_blocks = DatabaseHelper.get_table_data("user_block.json")
+        user_reports = DatabaseHelper.get_table_data("user_report.json")
+        chat_messages = DatabaseHelper.get_table_data("chat_message.json")
+        notifications = DatabaseHelper.get_table_data("notification.json")
 
         DatabaseHelper.create_table("users", user_columns)
         DatabaseHelper.create_table("interests", interest_columns)
@@ -156,3 +160,7 @@ class DatabaseHelper:
         DatabaseHelper.create_table("user_interests", user_interest_columns)
         DatabaseHelper.create_table("user_views", user_views)
         DatabaseHelper.create_table("user_likes", user_likes)
+        DatabaseHelper.create_table("user_blocks", user_blocks)
+        DatabaseHelper.create_table("user_reports", user_reports)
+        DatabaseHelper.create_table("chat_messages", chat_messages)
+        DatabaseHelper.create_table("notifications", notifications)

@@ -1,64 +1,103 @@
 "use client";
 
+import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { locationApi } from "@/api/client";
 import { cn } from "@/lib/utils";
 
 interface Props {
   form: UseFormReturn<any>;
   latitude: number | null;
   longitude: number | null;
+  locationLabel?: string | null;
+  onGpsUpdate?: (latitude: number, longitude: number) => void;
 }
 
-export const LocationUpdate = ({ form, latitude, longitude }: Props) => {
+export const LocationUpdate = ({
+  form,
+  latitude,
+  longitude,
+  locationLabel,
+  onGpsUpdate,
+}: Props) => {
   const { toast } = useToast();
+  const [manualQuery, setManualQuery] = useState("");
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [isRequestingGps, setIsRequestingGps] = useState(false);
   const hasLocation = latitude !== null && longitude !== null;
 
-  const getIPBasedLocation = async () => {
-    try {
-      const response = await fetch("https://ipapi.co/json/");
-      const data = await response.json();
-      form.setValue("latitude", data.latitude);
-      form.setValue("longitude", data.longitude);
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
       toast({
-        title: "Location updated",
-        description: "Using approximate location based on your IP address",
-        variant: "success",
-      });
-    } catch {
-      toast({
-        title: "Could not get location",
-        description: "Please try again or check your connection",
+        title: "GPS unavailable",
+        description: "Enter your city or neighborhood below.",
         variant: "error",
       });
-    }
-  };
-
-  const handleGetLocation = async () => {
-    if (!navigator.geolocation) {
-      await getIPBasedLocation();
       return;
     }
 
+    setIsRequestingGps(true);
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        form.setValue("latitude", position.coords.latitude);
-        form.setValue("longitude", position.coords.longitude);
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        form.setValue("latitude", lat);
+        form.setValue("longitude", lng);
+        form.setValue("location_label", null);
+        onGpsUpdate?.(lat, lng);
+        setIsRequestingGps(false);
         toast({
           title: "Location updated",
           description: "Using your current GPS location",
           variant: "success",
         });
       },
-      async () => {
-        await getIPBasedLocation();
+      () => {
+        setIsRequestingGps(false);
+        toast({
+          title: "Location access denied",
+          description: "Enter your city or neighborhood manually below.",
+          variant: "default",
+        });
       }
     );
   };
 
+  const handleManualGeocode = async () => {
+    if (!manualQuery.trim()) return;
+
+    setIsGeocoding(true);
+    try {
+      const result = await locationApi.geocodeLocationApiLocationGeocodePost({
+        query: manualQuery.trim(),
+      });
+      form.setValue("latitude", result.latitude);
+      form.setValue("longitude", result.longitude);
+      form.setValue("location_label", result.label);
+      onGpsUpdate?.(result.latitude, result.longitude);
+      toast({
+        title: "Location saved",
+        description: result.label,
+        variant: "success",
+      });
+    } catch {
+      toast({
+        title: "Location not found",
+        description: "Try a city or neighborhood name.",
+        variant: "error",
+      });
+    } finally {
+      setIsGeocoding(false);
+    }
+  };
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <p
         className={cn(
           "text-sm",
@@ -66,7 +105,7 @@ export const LocationUpdate = ({ form, latitude, longitude }: Props) => {
         )}
       >
         {hasLocation
-          ? "Location saved"
+          ? locationLabel || "Location saved"
           : "Location required for nearby matching"}
       </p>
 
@@ -74,15 +113,56 @@ export const LocationUpdate = ({ form, latitude, longitude }: Props) => {
         type="button"
         variant="outline"
         onClick={handleGetLocation}
+        disabled={isRequestingGps}
         className="w-full"
       >
-        {hasLocation ? "Update location" : "Use current location"}
+        {isRequestingGps ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Requesting GPS...
+          </>
+        ) : hasLocation ? (
+          "Update GPS location"
+        ) : (
+          "Use GPS location"
+        )}
       </Button>
 
       <p className="text-xs text-muted-foreground">
-        Uses GPS when available, otherwise an approximate location from your
-        network.
+        GPS uses your browser location only after you tap the button above.
       </p>
+
+      <div className="space-y-2 border-t border-border/60 pt-4">
+        <p className="text-sm font-medium">Or enter manually</p>
+        <p className="text-xs text-muted-foreground">
+          City or neighborhood if GPS is unavailable
+        </p>
+        <div className="flex gap-2">
+          <Input
+            placeholder="e.g. Paris 11e, Brooklyn"
+            value={manualQuery}
+            onChange={(e) => setManualQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                handleManualGeocode();
+              }
+            }}
+          />
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleManualGeocode}
+            disabled={isGeocoding || !manualQuery.trim()}
+          >
+            {isGeocoding ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Find"
+            )}
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

@@ -5,7 +5,7 @@ import { ProfileForm } from "@/components/profile/ProfileForm";
 import { useProfileCompletion } from "@/hooks/profile/useProfileCompletion";
 
 export default function CompleteProfilePage() {
-  useProfileCompletion();
+  useProfileCompletion({ redirectIfComplete: true });
 
   return (
     <AuthenticatedLayout>

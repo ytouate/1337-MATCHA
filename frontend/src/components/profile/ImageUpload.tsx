@@ -5,10 +5,17 @@ import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
 import { Star, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ProfileImage } from "@/components/profile/ProfileImage";
 import { cn } from "@/lib/utils";
 
+export interface ProfileImageItem {
+  file?: File;
+  preview: string;
+  existingPath?: string;
+}
+
 interface ImageUploadProps {
-  images: { file: File; preview: string }[];
+  images: ProfileImageItem[];
   onUpload: (file: File) => void;
   onRemove: (index: number) => void;
   onSetProfilePicture: (index: number) => void;
@@ -62,20 +69,31 @@ export function ImageUpload({
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
           {images.map((img, index) => (
             <div
-              key={index}
+              key={`${img.preview}-${index}`}
               className={cn(
                 "group relative overflow-hidden rounded-lg",
                 index === profilePicture && "ring-1 ring-foreground/20"
               )}
             >
               <div className="relative aspect-[3/4] w-full">
-                <Image
-                  src={img.preview}
-                  alt={`Uploaded ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 50vw, 20vw"
-                />
+                {img.preview.startsWith("blob:") ? (
+                  <Image
+                    src={img.preview}
+                    alt={`Photo ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 50vw, 20vw"
+                    unoptimized
+                  />
+                ) : (
+                  <ProfileImage
+                    src={img.preview}
+                    alt={`Photo ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="(max-width: 768px) 50vw, 20vw"
+                  />
+                )}
               </div>
 
               <div className="absolute inset-0 flex items-center justify-center gap-1 bg-foreground/40 opacity-0 transition-opacity group-hover:opacity-100">

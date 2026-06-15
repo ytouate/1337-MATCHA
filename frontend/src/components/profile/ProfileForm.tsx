@@ -32,66 +32,115 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ImageUpload } from "@/components/profile/ImageUpload";
+import {
+  ImageUpload,
+  type ProfileImageItem,
+} from "@/components/profile/ImageUpload";
 import { InterestsSelect } from "@/components/profile/InterestsSelect";
 import { LocationUpdate } from "@/components/profile/LocationUpdate";
 import { useAuthStore } from "@/store/auth";
 import { uploadApi, usersApi } from "@/api/client";
 import { Gender } from "@/api/model";
+import type { UserProfileResponse } from "@/api/model";
 import { useAuthCheck } from "@/hooks/auth/useAuthCheck";
-import { useGeolocation } from "@/hooks/useGeolocation";
+import { useGetMe } from "@/hooks/auth/useGetMe";
 import { useToast } from "@/hooks/use-toast";
+import { getImageUrl, toStoredImagePath } from "@/lib/utils";
 
 const formSchema = z.object({
-  bio: z.string().min(10, "Bio must be at least 10 characters").max(500),
+  bio: z.string().min(10, "Bio must be at least 10 characters").max(255),
   gender: z.enum(["Male", "Female"]),
   sexual_preference: z.enum(["Male", "Female"]),
   interests: z.array(z.string()).min(1, "Select at least 1 interest").max(5),
-  images: z.array(z.instanceof(File)).min(1, "Add at least 1 image").max(5),
   latitude: z.number().nullable(),
   longitude: z.number().nullable(),
+  location_label: z.string().nullable().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function ProfileForm() {
-  const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
+interface ProfileFormProps {
+  mode?: "complete" | "edit";
+}
+
+export function ProfileForm({ mode = "complete" }: ProfileFormProps) {
+  const [images, setImages] = useState<ProfileImageItem[]>([]);
   const [profilePicture, setProfilePicture] = useState<number | null>(null);
+  const [initialized, setInitialized] = useState(mode === "complete");
   const { toast } = useToast();
   const { user } = useAuthStore();
   const router = useRouter();
-  const { latitude, longitude } = useGeolocation();
+  const queryClient = useQueryClient();
+  const { data: meProfile } = useGetMe();
+
+  const profile = (meProfile ?? user) as UserProfileResponse | null;
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       bio: "",
-      gender: user?.gender || "Male",
-      sexual_preference: user?.gender === "Male" ? "Female" : "Male",
+      gender: "Male",
+      sexual_preference: "Female",
       interests: [],
-      images: [],
-      latitude: user?.latitude || null,
-      longitude: user?.longitude || null,
+      latitude: null,
+      longitude: null,
+      location_label: null,
     },
   });
 
-  const watched = form.watch();
+  useEffect(() => {
+    if (mode !== "edit" || !profile || initialized) return;
+
+    form.reset({
+      bio: profile.bio || "",
+      gender: (profile.gender as "Male" | "Female") || "Male",
+      sexual_preference:
+        (profile.sexual_preference as "Male" | "Female") || "Female",
+      interests: profile.interests || [],
+      latitude: profile.latitude ?? null,
+      longitude: profile.longitude ?? null,
+      location_label: profile.location_label ?? null,
+    });
+
+    const existingImages: ProfileImageItem[] = (profile.images || []).map(
+      (img) => ({
+        preview: getImageUrl(img.url),
+        existingPath: toStoredImagePath(img.url),
+      })
+    );
+    setImages(existingImages);
+
+    const profilePicIndex = (profile.images || []).findIndex(
+      (img) => img.is_profile_picture
+    );
+    setProfilePicture(profilePicIndex >= 0 ? profilePicIndex : null);
+    setInitialized(true);
+  }, [mode, profile, initialized, form]);
 
   useEffect(() => {
-    if (latitude && longitude) {
-      form.setValue("latitude", latitude);
-      form.setValue("longitude", longitude);
+    if (mode === "complete" && user) {
+      form.setValue("gender", (user.gender as "Male" | "Female") || "Male");
+      if (user.sexual_preference) {
+        form.setValue(
+          "sexual_preference",
+          user.sexual_preference as "Male" | "Female"
+        );
+      }
+      if (user.latitude != null) form.setValue("latitude", user.latitude);
+      if (user.longitude != null) form.setValue("longitude", user.longitude);
     }
-  }, [latitude, longitude, form]);
+  }, [mode, user, form]);
+
+  const watched = form.watch();
 
   const completionSteps = useMemo(
     () => [
       watched.bio.length >= 10,
-      watched.images.length >= 1,
+      images.length >= 1,
       watched.interests.length >= 1,
       watched.latitude !== null && watched.longitude !== null,
     ],
-    [watched]
+    [watched, images.length]
   );
 
   const completedCount = completionSteps.filter(Boolean).length;
@@ -108,16 +157,14 @@ export function ProfileForm() {
     }
     const preview = URL.createObjectURL(file);
     setImages((prev) => [...prev, { file, preview }]);
-    form.setValue("images", [...form.getValues("images"), file]);
   };
 
   const handleImageRemove = (index: number) => {
-    URL.revokeObjectURL(images[index].preview);
+    const removed = images[index];
+    if (removed.file) {
+      URL.revokeObjectURL(removed.preview);
+    }
     setImages((prev) => prev.filter((_, i) => i !== index));
-    form.setValue(
-      "images",
-      form.getValues("images").filter((_, i) => i !== index)
-    );
     if (profilePicture === index) {
       setProfilePicture(null);
     } else if (profilePicture !== null && profilePicture > index) {
@@ -125,72 +172,105 @@ export function ProfileForm() {
     }
   };
 
-  const queryClient = useQueryClient();
-  const { mutate: completeProfile, isPending } = useMutation({
+  const { mutate: saveProfile, isPending } = useMutation({
     mutationFn: async (data: FormValues) => {
-      const uploadResponse = (await uploadApi.uploadFilesApiUploadPost({
-        files: data.images,
-      })) as Array<{ url: string }>;
+      if (images.length < 1) {
+        throw new Error("At least one image is required");
+      }
+
+      const newFiles = images.filter((img) => img.file).map((img) => img.file!);
+      let uploadedPaths: string[] = [];
+
+      if (newFiles.length > 0) {
+        const uploadResponse = (await uploadApi.uploadFilesApiUploadPost({
+          files: newFiles,
+        })) as Array<{ url: string }>;
+        uploadedPaths = uploadResponse.map((file) => file.url);
+      }
+
+      let uploadIndex = 0;
+      const imagePaths = images.map((img) => {
+        if (img.existingPath) return img.existingPath;
+        const path = uploadedPaths[uploadIndex];
+        uploadIndex += 1;
+        return path;
+      });
+
+      const picIndex = profilePicture ?? 0;
+      const profilePicturePath = imagePaths[picIndex];
 
       await usersApi.partialUpdateUserApiUsersUsernamePatch(
         user?.username || "",
         {
           bio: data.bio,
           gender: data.gender as Gender,
-          sexual_preference: data.sexual_preference,
+          sexual_preference: data.sexual_preference as Gender,
           interests: data.interests,
-          images: uploadResponse.map((file) => `/api/images/${file.url}`),
-          profile_picture: uploadResponse[profilePicture || 0]?.url
-            ? `/api/images/${uploadResponse[profilePicture || 0].url}`
-            : undefined,
-          latitude: data.latitude,
-          longitude: data.longitude,
+          images: imagePaths,
+          profile_picture: profilePicturePath,
+          latitude: data.latitude ?? undefined,
+          longitude: data.longitude ?? undefined,
+          location_label: data.location_label ?? undefined,
         }
       );
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
-        title: "Profile completed",
-        description: "You're all set.",
+        title: mode === "complete" ? "Profile completed" : "Profile updated",
+        description: mode === "complete" ? "You're all set." : "Changes saved.",
         variant: "success",
       });
-      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      router.replace("/");
+      await queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      if (mode === "complete") {
+        router.replace("/");
+      }
     },
     onError: () => {
       toast({
         title: "Something went wrong",
-        description: "Failed to complete profile. Please try again.",
+        description: "Failed to save profile. Please try again.",
         variant: "error",
       });
     },
   });
 
   function onSubmit(values: FormValues) {
-    if (profilePicture === null && values.images.length > 0) {
+    if (images.length < 1) {
+      toast({
+        title: "Photo required",
+        description: "Add at least one photo.",
+        variant: "error",
+      });
+      return;
+    }
+    if (profilePicture === null) {
       setProfilePicture(0);
     }
-    completeProfile(values);
+    saveProfile(values);
   }
 
   useAuthCheck();
 
+  const genderDisabled = mode === "complete";
+
   return (
     <div className="space-y-8">
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-sm text-muted-foreground">
-          <span>Progress</span>
-          <span>
-            {completedCount} of {completionSteps.length}
-          </span>
+      {mode === "complete" && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>Progress</span>
+            <span>
+              {completedCount} of {completionSteps.length}
+            </span>
+          </div>
+          <div className="h-1 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-foreground/70 transition-[width] duration-300 ease-out"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         </div>
-        <div className="h-1 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-foreground/70 transition-[width] duration-300 ease-out"
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
-      </div>
+      )}
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
@@ -216,7 +296,7 @@ export function ProfileForm() {
                       />
                     </FormControl>
                     <FormDescription>
-                      {field.value.length}/500 characters
+                      {field.value.length}/255 characters
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -231,15 +311,9 @@ export function ProfileForm() {
                     <FormItem>
                       <FormLabel>Gender</FormLabel>
                       <Select
-                        onValueChange={(value) => {
-                          field.onChange(value);
-                          form.setValue(
-                            "sexual_preference",
-                            value === "Male" ? "Female" : "Male"
-                          );
-                        }}
-                        defaultValue={field.value}
-                        disabled
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={genderDisabled}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -264,8 +338,7 @@ export function ProfileForm() {
                       <FormLabel>Interested in</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        disabled
+                        value={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -273,8 +346,8 @@ export function ProfileForm() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="Male">Male</SelectItem>
-                          <SelectItem value="Female">Female</SelectItem>
+                          <SelectItem value="Male">Men</SelectItem>
+                          <SelectItem value="Female">Women</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -293,23 +366,12 @@ export function ProfileForm() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <FormField
-                control={form.control}
-                name="images"
-                render={() => (
-                  <FormItem>
-                    <FormControl>
-                      <ImageUpload
-                        images={images}
-                        onUpload={handleImageUpload}
-                        onRemove={handleImageRemove}
-                        onSetProfilePicture={setProfilePicture}
-                        profilePicture={profilePicture}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+              <ImageUpload
+                images={images}
+                onUpload={handleImageUpload}
+                onRemove={handleImageRemove}
+                onSetProfilePicture={setProfilePicture}
+                profilePicture={profilePicture}
               />
             </CardContent>
           </Card>
@@ -351,6 +413,7 @@ export function ProfileForm() {
                 form={form}
                 latitude={watched.latitude}
                 longitude={watched.longitude}
+                locationLabel={watched.location_label}
               />
             </CardContent>
           </Card>
@@ -361,8 +424,10 @@ export function ProfileForm() {
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...
               </>
-            ) : (
+            ) : mode === "complete" ? (
               "Complete profile"
+            ) : (
+              "Save changes"
             )}
           </Button>
         </form>

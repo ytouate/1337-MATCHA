@@ -1,29 +1,9 @@
 "use client";
 
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
-
-const interests = [
-  "Travel",
-  "Food",
-  "Sports",
-  "Music",
-  "Art",
-  "Reading",
-  "Gaming",
-  "Fitness",
-  "Photography",
-  "Movies",
-  "Technology",
-  "Fashion",
-  "Cooking",
-  "Yoga",
-  "Dancing",
-  "Hiking",
-  "Pets",
-  "Volunteering",
-  "Gardening",
-  "Writing",
-];
+import { interestsApi } from "@/api/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface InterestSelectProps {
   selectedInterests: string[];
@@ -36,6 +16,18 @@ export function InterestsSelect({
   onInterestsChange,
   maxInterests = 5,
 }: InterestSelectProps) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["interests"],
+    queryFn: async () => {
+      const response = (await interestsApi.listInterestsApiInterestsGet()) as {
+        interests: string[];
+      };
+      return response.interests;
+    },
+  });
+
+  const interests = data ?? [];
+
   const toggleInterest = (interest: string) => {
     if (selectedInterests.includes(interest)) {
       onInterestsChange(selectedInterests.filter((i) => i !== interest));
@@ -46,6 +38,16 @@ export function InterestsSelect({
 
   const atLimit =
     selectedInterests.length >= maxInterests && selectedInterests.length > 0;
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-20 rounded-md" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -73,7 +75,7 @@ export function InterestsSelect({
                 disabled && "cursor-not-allowed opacity-40"
               )}
             >
-              {interest}
+              #{interest.toLowerCase().replace(/\s+/g, "")}
             </button>
           );
         })}
