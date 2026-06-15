@@ -1,4 +1,5 @@
 import Axios, { AxiosError, AxiosRequestConfig } from "axios";
+import { useAuthStore } from "@/store/auth";
 
 export const AXIOS_INSTANCE = Axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:7001",
@@ -12,7 +13,11 @@ AXIOS_INSTANCE.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      window.location.href = "/";
+      const { isAuthenticated, logout } = useAuthStore.getState();
+      if (isAuthenticated) {
+        logout();
+        window.location.href = "/";
+      }
     }
     return Promise.reject(error);
   }

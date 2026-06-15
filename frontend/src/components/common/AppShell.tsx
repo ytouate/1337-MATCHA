@@ -76,13 +76,13 @@ function AuthModals() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <>
+    <div className="h-dvh">
       <Navbar />
-      <main className="min-h-screen pt-16">{children}</main>
+      <main className="h-full overflow-y-auto pt-16">{children}</main>
       <Suspense fallback={null}>
         <VerifiedRedirectHandler />
       </Suspense>
       <AuthModals />
-    </>
+    </div>
   );
 }

@@ -7,7 +7,7 @@ export const AuthenticatedHome = () => {
 
   return (
     <AuthenticatedLayout>
-      <div className="flex flex-col items-center justify-center">
+      <div className="flex h-full flex-col items-center justify-center">
         <h1 className="text-4xl font-bold mb-4">
           Welcome, {user?.first_name}!
         </h1>

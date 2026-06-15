@@ -16,19 +16,15 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
     if (!isLoading) {
       if (!isAuthenticated) {
         router.replace("/");
-      } else if (user) {
-        if (!user.is_profile_completed) {
-          router.replace("/complete-profile");
-        } else if (window.location.pathname === "/") {
-          router.replace("/");
-        }
+      } else if (user && !user.is_profile_completed) {
+        router.replace("/complete-profile");
       }
     }
   }, [isLoading, isAuthenticated, user, router]);
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-full min-h-[calc(100dvh-4rem)] items-center justify-center">
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-primary"></div>
       </div>
     );

@@ -1,15 +1,19 @@
-import React from "react";
-import { Button } from "../ui/button";
+"use client";
+
 import { UseFormReturn } from "react-hook-form";
-import { MapPin } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface Props {
   form: UseFormReturn<any>;
+  latitude: number | null;
+  longitude: number | null;
 }
 
-export const LocationUpdate = ({ form }: Props) => {
+export const LocationUpdate = ({ form, latitude, longitude }: Props) => {
   const { toast } = useToast();
+  const hasLocation = latitude !== null && longitude !== null;
 
   const getIPBasedLocation = async () => {
     try {
@@ -18,13 +22,14 @@ export const LocationUpdate = ({ form }: Props) => {
       form.setValue("latitude", data.latitude);
       form.setValue("longitude", data.longitude);
       toast({
-        title: "Location Updated",
-        description: "Using approximate location based on IP address",
+        title: "Location updated",
+        description: "Using approximate location based on your IP address",
+        variant: "success",
       });
-    } catch (error) {
+    } catch {
       toast({
-        title: "Error",
-        description: "Failed to get location",
+        title: "Could not get location",
+        description: "Please try again or check your connection",
         variant: "error",
       });
     }
@@ -41,27 +46,43 @@ export const LocationUpdate = ({ form }: Props) => {
         form.setValue("latitude", position.coords.latitude);
         form.setValue("longitude", position.coords.longitude);
         toast({
-          title: "Location Updated",
-          description: "Using your current location",
+          title: "Location updated",
+          description: "Using your current GPS location",
+          variant: "success",
         });
       },
-      async (error) => {
+      async () => {
         await getIPBasedLocation();
       }
     );
   };
 
   return (
-    <div className="flex items-center gap-4">
+    <div className="space-y-3">
+      <p
+        className={cn(
+          "text-sm",
+          hasLocation ? "text-foreground" : "text-muted-foreground"
+        )}
+      >
+        {hasLocation
+          ? "Location saved"
+          : "Location required for nearby matching"}
+      </p>
+
       <Button
         type="button"
         variant="outline"
         onClick={handleGetLocation}
         className="w-full"
       >
-        <MapPin className="mr-2 h-4 w-4" />
-        Update Location
+        {hasLocation ? "Update location" : "Use current location"}
       </Button>
+
+      <p className="text-xs text-muted-foreground">
+        Uses GPS when available, otherwise an approximate location from your
+        network.
+      </p>
     </div>
   );
 };

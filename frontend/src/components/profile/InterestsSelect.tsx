@@ -1,9 +1,6 @@
 "use client";
 
-import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 
 const interests = [
   "Travel",
@@ -47,25 +44,39 @@ export function InterestsSelect({
     }
   };
 
+  const atLimit =
+    selectedInterests.length >= maxInterests && selectedInterests.length > 0;
+
   return (
-    <div className="space-y-2">
-      <Label>Interests (Select up to {maxInterests})</Label>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-        {interests.map((interest) => (
-          <Button
-            key={interest}
-            variant="outline"
-            size="sm"
-            className={cn(
-              "h-auto py-2 px-4 justify-start",
-              selectedInterests.includes(interest) &&
-                "bg-primary text-primary-foreground"
-            )}
-            onClick={() => toggleInterest(interest)}
-          >
-            {interest}
-          </Button>
-        ))}
+    <div className="space-y-3">
+      <p className="text-sm text-muted-foreground">
+        {selectedInterests.length} of {maxInterests} selected
+      </p>
+
+      <div className="flex flex-wrap gap-2">
+        {interests.map((interest) => {
+          const selected = selectedInterests.includes(interest);
+          const disabled = atLimit && !selected;
+
+          return (
+            <button
+              key={interest}
+              type="button"
+              disabled={disabled}
+              onClick={() => toggleInterest(interest)}
+              className={cn(
+                "rounded-md border px-3 py-1.5 text-sm transition-colors",
+                "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring",
+                selected
+                  ? "border-secondary bg-secondary text-secondary-foreground"
+                  : "border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                disabled && "cursor-not-allowed opacity-40"
+              )}
+            >
+              {interest}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
