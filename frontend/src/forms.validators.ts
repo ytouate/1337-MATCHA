@@ -1,5 +1,22 @@
 import { z } from "zod";
-import { Gender } from "./models";
+import { Gender } from "@/api/model";
+import { containsDictionaryWord } from "./lib/common_passwords";
+
+export const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters long")
+  .max(32, "Password must not exceed 32 characters")
+  .regex(/[A-Z]/, "Password must include at least one uppercase letter")
+  .regex(/[a-z]/, "Password must include at least one lowercase letter")
+  .regex(/\d/, "Password must include at least one number")
+  .regex(
+    /[!@#$%^&*(),.?":{}|<>]/,
+    "Password must include at least one special character"
+  )
+  .refine(
+    (password) => !containsDictionaryWord(password),
+    "Password contains a common dictionary word"
+  );
 
 export const signUpSchema = z
   .object({
@@ -17,17 +34,7 @@ export const signUpSchema = z
       .max(16, "Username must not exceed 16 characters")
       .regex(/^[a-z0-9._]+$/, "Please enter a valid username"),
     email: z.string().email("Invalid email address"),
-    password: z
-      .string()
-      .min(8, "Password must be at least 8 characters long")
-      .max(32, "Password must not exceed 32 characters")
-      .regex(/[A-Z]/, "Password must include at least one uppercase letter")
-      .regex(/[a-z]/, "Password must include at least one lowercase letter")
-      .regex(/\d/, "Password must include at least one number")
-      .regex(
-        /[!@#$%^&*(),.?":{}|<>]/,
-        "Password must include at least one special character"
-      ),
+    password: passwordSchema,
     confirmPassword: z.string(),
     gender: z.nativeEnum(Gender),
     birthdate: z.date().refine(
@@ -57,3 +64,13 @@ export const signinSchema = z.object({
   login: z.union([z.string().email(), z.string()]),
   password: z.string().min(8),
 });
+
+export const resetPasswordSchema = z
+  .object({
+    newPassword: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });

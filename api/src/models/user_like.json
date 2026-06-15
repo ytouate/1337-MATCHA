@@ -1,0 +1,42 @@
+[
+  {
+    "name": "id",
+    "type": {
+      "type": "SERIAL"
+    },
+    "is_primary": true,
+    "is_null": false
+  },
+  {
+    "name": "liker_id",
+    "type": {
+      "type": "INTEGER"
+    },
+    "is_null": false,
+    "references": {
+      "table": "users",
+      "column": "id",
+      "on_delete": "CASCADE"
+    }
+  },
+  {
+    "name": "liked_id",
+    "type": {
+      "type": "INTEGER"
+    },
+    "is_null": false,
+    "references": {
+      "table": "users",
+      "column": "id",
+      "on_delete": "CASCADE"
+    }
+  },
+  {
+    "name": "liked_at",
+    "type": {
+      "type": "TIMESTAMP"
+    },
+    "is_null": false,
+    "default": "CURRENT_TIMESTAMP"
+  }
+]

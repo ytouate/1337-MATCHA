@@ -81,7 +81,11 @@ export function DatePicker({
           {date ? format(date, "PPP") : <span>Pick a date</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
+      <PopoverContent
+        className="w-auto p-0"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+      >
         <div className="flex justify-between p-2">
           <Select
             onValueChange={handleMonthChange}
@@ -119,7 +123,7 @@ export function DatePicker({
           mode="single"
           selected={date}
           onSelect={handleSelect}
-          initialFocus
+          autoFocus
           month={date}
           onMonthChange={setDate}
         />

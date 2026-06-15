@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth";
 import { useRouter } from "next/navigation";
-import { appAPI } from "@/utils/axios";
+import { authApi } from "@/api/client";
 import { useToast } from "../use-toast";
 
 export const useSignout = () => {
@@ -10,29 +10,30 @@ export const useSignout = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const clearSession = () => {
+    queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+    logout();
+    router.replace("/");
+  };
+
   return useMutation({
     mutationFn: async () => {
-      const response = await appAPI.api.signoutApiAuthSignoutPost();
-      return response.data;
+      return authApi.signoutApiAuthSignoutPost();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-
-      logout();
-
+      clearSession();
       toast({
         variant: "success",
         title: "Success",
         description: "Successfully logged out",
       });
-
-      router.replace("/");
     },
     onError: () => {
+      clearSession();
       toast({
-        variant: "error",
-        title: "Error",
-        description: "Failed to logout. Please try again.",
+        variant: "success",
+        title: "Logged out",
+        description: "Your local session was cleared.",
       });
     },
   });

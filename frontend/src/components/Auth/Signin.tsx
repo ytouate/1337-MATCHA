@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Form,
   FormControl,
@@ -42,10 +42,7 @@ export const Signin = ({ isOpen, onOpenChange, onForgotPassword }: Props) => {
     },
   });
 
-  const signin = useSignin(() => {
-    onOpenChange(false);
-    router.push("/");
-  });
+  const signin = useSignin(() => onOpenChange(false));
 
   function onSubmit(values: z.infer<typeof signinSchema>) {
     signin.mutate(values);

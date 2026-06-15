@@ -3,28 +3,40 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/auth";
-import { Navbar } from "../leading/Navbar";
 
-export default function AuthenticatedLayout({
-  children,
-}: {
+interface AuthenticatedLayoutProps {
   children: React.ReactNode;
-}) {
-  const { isAuthenticated } = useAuthStore();
+}
+
+export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
+  const { isAuthenticated, isLoading, user } = useAuthStore();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace("/");
+    if (!isLoading) {
+      if (!isAuthenticated) {
+        router.replace("/");
+      } else if (user) {
+        if (!user.is_profile_completed) {
+          router.replace("/complete-profile");
+        } else if (window.location.pathname === "/") {
+          router.replace("/");
+        }
+      }
     }
-  }, [isAuthenticated, router]);
+  }, [isLoading, isAuthenticated, user, router]);
 
-  if (!isAuthenticated) return null;
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-primary"></div>
+      </div>
+    );
+  }
 
-  return (
-    <div className="min-h-screen">
-      <Navbar setSigninModalOpen={() => {}} />
-      <main className="pt-16">{children}</main>
-    </div>
-  );
-}
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return <>{children}</>;
+};

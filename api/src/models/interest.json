@@ -1,0 +1,26 @@
+[
+    {
+        "name": "id",
+        "type": {
+            "type": "SERIAL"
+        },
+        "is_primary": true
+    },
+    {
+        "name": "name",
+        "type": {
+            "type": "VARCHAR",
+            "length": 50
+        },
+        "is_null": false,
+        "is_blank": false
+    },
+    {
+        "name": "created_at",
+        "type": {
+            "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        "is_null": false,
+        "default": "CURRENT_TIMESTAMP"
+    }
+]

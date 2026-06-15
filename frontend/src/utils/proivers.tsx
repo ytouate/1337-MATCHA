@@ -4,6 +4,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode, useState } from "react";
 import { useAuthCheck } from "@/hooks/auth/useAuthCheck";
+import { AuthModalProvider } from "@/contexts/AuthModalContext";
+import { AppShell } from "@/components/common/AppShell";
 
 function AuthProvider({ children }: { children: ReactNode }) {
   useAuthCheck();
@@ -30,7 +32,11 @@ export default function Providers({ children }: { children: ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <AuthModalProvider>
+            <AppShell>{children}</AppShell>
+          </AuthModalProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
   );

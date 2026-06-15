@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { appAPI } from "@/utils/axios";
+import { authApi } from "@/api/client";
 import { AuthTypes } from "@/types";
 
 export const useGetMe = () => {
   return useQuery({
     queryKey: ["auth", "me"],
     queryFn: async () => {
-      const response = await appAPI.api.getMeApiAuthMeGet();
-      return response.data as AuthTypes.User;
+      return (await authApi.getMeApiAuthMeGet()) as AuthTypes.User;
     },
     retry: false,
     refetchOnWindowFocus: false,

@@ -1,0 +1,45 @@
+[
+    {
+        "name": "id",
+        "type": {
+            "type": "SERIAL"
+        },
+        "is_primary": true
+    },
+    {
+        "name": "url",
+        "type": {
+            "type": "VARCHAR(255)"
+        },
+        "is_null": false,
+        "is_blank": false
+    },
+    {
+        "name": "user_id",
+        "type": {
+            "type": "INTEGER"
+        },
+        "is_null": false,
+        "references": {
+            "table": "users",
+            "column": "id",
+            "on_delete": "CASCADE"
+        }
+    },
+    {
+        "name": "is_profile_picture",
+        "type": {
+            "type": "BOOLEAN"
+        },
+        "is_null": false,
+        "default": false
+    },
+    {
+        "name": "created_at",
+        "type": {
+            "type": "TIMESTAMP WITH TIME ZONE"
+        },
+        "is_null": false,
+        "default": "CURRENT_TIMESTAMP"
+    }
+]

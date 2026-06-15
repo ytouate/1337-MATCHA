@@ -1,15 +1,15 @@
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "../use-toast";
-import axios from "axios";
-import { SignupData } from "@/models";
-import { appAPI } from "@/utils/axios";
+import { isAxiosError } from "axios";
+import type { SignupData } from "@/api/model";
+import { authApi } from "@/api/client";
 
 export const useSignup = (onSuccessCallback?: () => void) => {
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: async (data: SignupData) => {
-      return await appAPI.api.signupApiAuthSignupPost(data);
+      return authApi.signupApiAuthSignupPost(data);
     },
     onSuccess: () => {
       toast({
@@ -22,9 +22,11 @@ export const useSignup = (onSuccessCallback?: () => void) => {
     },
     onError: (error) => {
       const responseErrorMessage =
-        axios.isAxiosError(error) && error.response?.data.message
-          ? error.response.data.message
-          : "There was a problem signing you up, please try again!";
+        isAxiosError(error) && error.response?.data?.detail
+          ? String(error.response.data.detail)
+          : isAxiosError(error) && error.response?.data?.message
+            ? String(error.response.data.message)
+            : "There was a problem signing you up, please try again!";
       toast({
         variant: "error",
         title: "Uh oh! Something went wrong.",
@@ -32,6 +34,5 @@ export const useSignup = (onSuccessCallback?: () => void) => {
         duration: 2000,
       });
     },
-    onSettled: () => {},
   });
 };

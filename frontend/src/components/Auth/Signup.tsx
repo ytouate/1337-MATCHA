@@ -30,7 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Gender } from "@/models";
+import { Gender } from "@/api/model";
 import { DatePicker } from "../common/DatePicker";
 import { useSignup } from "@/hooks/auth/useSignup";
 
@@ -68,17 +68,17 @@ export const Signup = ({ isOpen, onOpenChange, onSuccess }: Props) => {
   });
 
   function onSubmit(values: z.infer<typeof signUpSchema>) {
+    const { confirmPassword: _confirmPassword, ...signupData } = values;
     signup.mutate({
-      ...values,
+      ...signupData,
       birthdate: values.birthdate.toISOString().split("T")[0],
     });
   }
 
   return (
-    <Dialog modal onOpenChange={onOpenChange} open={isOpen}>
+    <Dialog modal={false} onOpenChange={onOpenChange} open={isOpen}>
       <DialogContent
         onKeyDown={handleKeyDown}
-        onInteractOutside={(e) => e.preventDefault()}
         className="border-border max-h-[100vh] overflow-auto rounded-lg w-[95%]"
       >
         <>
@@ -155,9 +155,9 @@ export const Signup = ({ isOpen, onOpenChange, onSuccess }: Props) => {
                       return (
                         <FormItem>
                           <FormLabel>Birthdate</FormLabel>
-                          <FormControl {...field}>
+                          <FormControl>
                             <DatePicker
-                              date={new Date(field.value)}
+                              date={field.value}
                               setDate={field.onChange}
                             />
                           </FormControl>

@@ -12,4 +12,4 @@ RUN pip install poetry
 
 RUN poetry install
 
-CMD ["poetry", "run", "uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "9000"]
+CMD ["poetry", "run", "uvicorn", "src.main:app", "--reload", "--host", "0.0.0.0", "--port", "7001"]

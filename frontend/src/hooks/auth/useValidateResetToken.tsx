@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { appAPI } from "@/utils/axios";
+import { authApi } from "@/api/client";
 import { useRouter } from "next/navigation";
 
 export const useValidateResetToken = (token: string) => {
@@ -9,9 +9,7 @@ export const useValidateResetToken = (token: string) => {
     queryKey: ["validateResetToken", token],
     queryFn: async () => {
       try {
-        await appAPI.api.validateResetTokenApiAuthValidateResetTokenTokenGet(
-          token
-        );
+        await authApi.validateResetTokenApiAuthValidateResetTokenTokenGet(token);
         router.push(`/reset-password/form?token=${token}`);
         return true;
       } catch (error) {

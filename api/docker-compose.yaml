@@ -5,7 +5,7 @@ services:
     container_name: app
     build: .
     ports:
-      - 9000:9000
+      - 7001:7001
     environment:
       - PYTHONUNBUFFERED=1
     restart: always
@@ -20,7 +20,7 @@ services:
       - .env
     restart: always
     ports:
-      - 5431:5432
+      - 5436:5432
     volumes:
       - match_db:/var/lib/postgresql/data
   storage:

@@ -1,16 +1,14 @@
-import { appAPI } from "@/utils/axios";
+import { authApi } from "@/api/client";
 import { useMutation } from "@tanstack/react-query";
-
-import { PasswordResetRequest, APIError } from "@/types/auth";
+import type { PasswordResetRequest } from "@/api/model";
+import { APIError } from "@/types/auth";
 import { useToast } from "../use-toast";
 
 export function useForgotPassword() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async (data: PasswordResetRequest) => {
-      const response =
-        await appAPI.api.forgotPasswordApiAuthForgotPasswordPost(data);
-      return response.data;
+      return authApi.forgotPasswordApiAuthForgotPasswordPost(data);
     },
     onSuccess: () => {
       toast({

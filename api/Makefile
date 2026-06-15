@@ -1,40 +1,37 @@
-COMPOSE_COMMAND := "docker-compose"
-DOCKERFILE := "docker-compose.yaml"
-ARGS := $(wordlist 2,$(words $(filter-out $@,$(MAKECMDGOALS))),$(filter-out $@,$(MAKECMDGOALS)))
+COMPOSE_COMMAND := docker-compose
+DOCKERFILE := docker-compose.yaml
 
-.PHONY: backend
+.PHONY: backend build logs exec down restart psql create-tables seed-interests
+
 backend:
-	$(COMPOSE_COMMAND) -f $(DOCKERFILE) up --remove-orphans --build -d
+	$(COMPOSE_COMMAND) -f $(DOCKERFILE) up --remove-orphans -d
 
-.PHONY: build
 build:
-	$(COMPOSE_COMMAND) -f $(DOCKERFILE) build --no-cache 
+	$(COMPOSE_COMMAND) -f $(DOCKERFILE) build --no-cache
 
-.PHONY: logs
 logs:
 	$(COMPOSE_COMMAND) -f $(DOCKERFILE) logs --follow
 
-.PHONY: exec
+# Usage: make exec -- poetry run python create_tables.py
 exec:
-	$(COMPOSE_COMMAND) -f $(DOCKERFILE) exec app $(ARGS)
+	$(COMPOSE_COMMAND) -f $(DOCKERFILE) exec app $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 
-.PHONY: up down restart logs ps create-bucket
+create-tables:
+	$(COMPOSE_COMMAND) -f $(DOCKERFILE) exec app poetry run python create_tables.py
 
+seed-interests:
+	$(COMPOSE_COMMAND) -f $(DOCKERFILE) exec app poetry run python insert_interests.py
+
+test:
+	poetry run pytest -v
 
 down:
-	docker-compose down
+	$(COMPOSE_COMMAND) -f $(DOCKERFILE) down
 
-restart: down up
+restart: down backend
 
-logs:
-	docker-compose logs -f
-
-ps:
-	docker-compose ps
-
-.PHONY: psql
 psql:
-	$(COMPOSE_COMMAND) -f $(DOCKERFILE) exec db psql -U postgres -d postgres
+	$(COMPOSE_COMMAND) -f $(DOCKERFILE) exec db psql -U matcha -d matcha
 
 %:
-	@:%
+	@:

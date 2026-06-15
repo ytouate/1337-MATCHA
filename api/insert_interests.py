@@ -1,4 +1,4 @@
-from app.helpers.utils import DatabaseHelper
+from src.db.helper import DatabaseHelper
 
 interests = [
     "Reading",

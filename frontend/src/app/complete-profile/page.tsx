@@ -2,7 +2,7 @@
 
 import { useProfileCompletion } from "@/hooks/profile/useProfileCompletion";
 import { ProfileForm } from "@/components/profile/ProfileForm";
-import AuthenticatedLayout from "@/components/common/AuthenticatedLayout";
+import { AuthenticatedLayout } from "@/components/common/AuthenticatedLayout";
 
 export default function CompleteProfilePage() {
   useProfileCompletion();
