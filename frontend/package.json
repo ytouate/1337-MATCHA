@@ -50,6 +50,10 @@
     "zod": "^3.25.76",
     "zustand": "^5.0.14"
   },
+  "browserslist": [
+    "last 2 Chrome versions",
+    "last 2 Firefox versions"
+  ],
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.1",
     "@testing-library/jest-dom": "^6.6.3",

@@ -30,7 +30,7 @@ const securityHeaders = [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
-      `img-src 'self' data: blob: ${API_BASE}`,
+      `img-src 'self' data: blob: ${API_BASE} https://*.tile.openstreetmap.org`,
       `connect-src 'self' ${API_BASE} ${wsBase}`,
       "font-src 'self'",
       "frame-ancestors 'none'",

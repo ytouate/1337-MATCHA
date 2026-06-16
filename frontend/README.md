@@ -16,6 +16,14 @@ bun dev
 
 Open [http://localhost:9998](http://localhost:9998) with your browser to see the result.
 
+## Supported browsers
+
+Matcha targets the **latest two major releases** of Chrome and Firefox (see `browserslist` in `package.json`).
+
+- JavaScript must be enabled.
+- WebSocket support is required for live chat and notifications.
+- Geolocation and microphone access require a secure context (HTTPS or localhost).
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

@@ -1,5 +1,13 @@
 "use client";
 
+import { useChatSocket } from "@/contexts/ChatSocketContext";
+import {
+  CALL_OUTGOING_TIMEOUT_MS,
+  createCallId,
+  type AudioCallStatus,
+  type CallSignalPayload,
+} from "@/lib/audioCall";
+import { RTC_PEER_CONFIG, isWebRtcSupported } from "@/lib/webrtcConfig";
 import {
   createContext,
   useCallback,
@@ -10,14 +18,25 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { useChatSocket } from "@/contexts/ChatSocketContext";
-import {
-  CALL_OUTGOING_TIMEOUT_MS,
-  createCallId,
-  type AudioCallStatus,
-  type CallSignalPayload,
-} from "@/lib/audioCall";
-import { RTC_PEER_CONFIG } from "@/lib/webrtcConfig";
+
+const WEBRTC_UNSUPPORTED_ERROR =
+  "Audio calls are not supported in this browser.";
+const MIC_DENIED_ERROR = "Microphone access is required for audio calls.";
+const CALL_START_ERROR = "Could not start the audio call. Please try again.";
+
+function playRemoteAudio(audio: HTMLAudioElement | null) {
+  if (!audio) return;
+  void audio.play().catch(() => {
+    // Firefox may defer playback until after the user gesture window closes.
+  });
+}
+
+function getCallErrorMessage(error: unknown): string {
+  if (error instanceof DOMException && error.name === "NotAllowedError") {
+    return MIC_DENIED_ERROR;
+  }
+  return CALL_START_ERROR;
+}
 
 interface AudioCallContextValue {
   status: AudioCallStatus;
@@ -116,6 +135,7 @@ export function AudioCallProvider({ children }: { children: ReactNode }) {
         const [stream] = event.streams;
         if (stream && remoteAudioRef.current) {
           remoteAudioRef.current.srcObject = stream;
+          playRemoteAudio(remoteAudioRef.current);
         }
       };
 
@@ -212,6 +232,11 @@ export function AudioCallProvider({ children }: { children: ReactNode }) {
     async (username: string) => {
       if (statusRef.current !== "idle") return;
 
+      if (!isWebRtcSupported()) {
+        setError(WEBRTC_UNSUPPORTED_ERROR);
+        return;
+      }
+
       const id = createCallId();
       setPeerUsername(username);
       setCallId(id);
@@ -227,8 +252,9 @@ export function AudioCallProvider({ children }: { children: ReactNode }) {
             void hangUp();
           }
         }, CALL_OUTGOING_TIMEOUT_MS);
-      } catch {
+      } catch (error) {
         resetCall();
+        setError(getCallErrorMessage(error));
       }
     },
     [acquireMicrophone, hangUp, resetCall, sendCallSignal],
@@ -238,6 +264,12 @@ export function AudioCallProvider({ children }: { children: ReactNode }) {
     const peer = peerRef.current;
     const id = callIdRef.current;
     if (!peer || !id || statusRef.current !== "incoming") return;
+
+    if (!isWebRtcSupported()) {
+      setError(WEBRTC_UNSUPPORTED_ERROR);
+      resetCall();
+      return;
+    }
 
     try {
       await acquireMicrophone();
@@ -249,8 +281,9 @@ export function AudioCallProvider({ children }: { children: ReactNode }) {
         pendingOfferRef.current = null;
         await handleRemoteOffer(peer, id, offer);
       }
-    } catch {
+    } catch (error) {
       resetCall();
+      setError(getCallErrorMessage(error));
     }
   }, [acquireMicrophone, handleRemoteOffer, resetCall, sendCallSignal]);
 
@@ -313,7 +346,11 @@ export function AudioCallProvider({ children }: { children: ReactNode }) {
       }
 
       if (event === "call.ice" && pcRef.current) {
-        void pcRef.current.addIceCandidate(payload.candidate ?? null);
+        void pcRef.current
+          .addIceCandidate(payload.candidate ?? null)
+          .catch(() => {
+            // Firefox throws on duplicate or invalid ICE candidates.
+          });
         return;
       }
 

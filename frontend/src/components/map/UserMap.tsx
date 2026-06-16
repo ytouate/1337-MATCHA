@@ -149,12 +149,12 @@ export function UserMap({
   }, [positions, viewerLatitude, viewerLongitude]);
 
   if (isLoading) {
-    return <Skeleton className="h-[min(70vh,720px)] w-full rounded-lg" />;
+    return <Skeleton className="h-[min(50dvh,480px)] md:h-[min(70vh,720px)] w-full rounded-lg" />;
   }
 
   if (isMissingLocation) {
     return (
-      <div className="flex h-[min(70vh,720px)] items-center justify-center rounded-lg border border-dashed border-border/60 px-6 py-16 text-center">
+      <div className="flex h-[min(50dvh,480px)] md:h-[min(70vh,720px)] items-center justify-center rounded-lg border border-dashed border-border/60 px-6 py-16 text-center">
         <div>
           <p className="text-sm font-medium">Set your location to use the map</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -170,7 +170,7 @@ export function UserMap({
 
   if (isError) {
     return (
-      <div className="flex h-[min(70vh,720px)] items-center justify-center rounded-lg border border-dashed border-destructive/40 px-6 py-16 text-center">
+      <div className="flex h-[min(50dvh,480px)] md:h-[min(70vh,720px)] items-center justify-center rounded-lg border border-dashed border-destructive/40 px-6 py-16 text-center">
         <div>
           <p className="text-sm font-medium">Could not load map results</p>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -194,7 +194,7 @@ export function UserMap({
           center={center}
           zoom={DEFAULT_ZOOM}
           scrollWheelZoom
-          className="h-[min(70vh,720px)] w-full"
+          className="h-[min(50dvh,480px)] md:h-[min(70vh,720px)] w-full"
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'

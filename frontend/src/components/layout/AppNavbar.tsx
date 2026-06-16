@@ -164,7 +164,7 @@ export function AppNavbar() {
   const accountItems = user ? getAccountNavItems(user.username) : [];
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-border/60 bg-background/95 backdrop-blur">
+    <header className="fixed inset-x-0 top-0 z-50 border-b border-border/60 bg-background/95 pt-[env(safe-area-inset-top)] backdrop-blur">
       <div className="mx-auto flex h-16 w-full max-w-[1550px] items-center justify-between gap-4 px-4">
         <div className="flex items-center gap-3">
           {isAuthenticated && (
@@ -173,7 +173,7 @@ export function AppNavbar() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="lg:hidden"
+                  className="min-h-11 min-w-11 lg:hidden"
                   aria-label="Open menu"
                 >
                   <Menu className="h-5 w-5" />
@@ -214,7 +214,7 @@ export function AppNavbar() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-full"
+                    className="min-h-11 min-w-11 rounded-full"
                     aria-label="Account menu"
                   >
                     <Avatar className="h-8 w-8">
@@ -278,6 +278,7 @@ export function AppNavbar() {
                 onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 variant="ghost"
                 size="icon"
+                className="min-h-11 min-w-11"
                 aria-label="Toggle theme"
               >
                 {theme === "light" ? <Moon /> : <Sun />}

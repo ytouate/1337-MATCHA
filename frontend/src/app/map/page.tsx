@@ -23,7 +23,7 @@ const UserMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <Skeleton className="h-[min(70vh,720px)] w-full rounded-lg" />
+      <Skeleton className="h-[min(50dvh,480px)] md:h-[min(70vh,720px)] w-full rounded-lg" />
     ),
   },
 );
@@ -71,7 +71,7 @@ export default function MapPage() {
         fallback={
           <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
             <Skeleton className="mb-6 h-10 w-48" />
-            <Skeleton className="h-[min(70vh,720px)] w-full rounded-lg" />
+            <Skeleton className="h-[min(50dvh,480px)] md:h-[min(70vh,720px)] w-full rounded-lg" />
           </div>
         }
       >

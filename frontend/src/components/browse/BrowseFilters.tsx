@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,6 +89,7 @@ const AUTO_APPLY_DELAY_MS = 300;
 
 export function BrowseFilters({ filters, onChange }: BrowseFiltersProps) {
   const [draft, setDraft] = useState(filters);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const appliedTagsRef = useRef(filters.tags ?? []);
 
   useEffect(() => {
@@ -166,7 +168,28 @@ export function BrowseFilters({ filters, onChange }: BrowseFiltersProps) {
   const sliderValue = draft.max_distance_km ?? 50;
 
   return (
-    <div className="space-y-6 rounded-lg border border-border/60 p-4">
+    <div className="rounded-lg border border-border/60">
+      <div className="flex items-center justify-between p-4 md:hidden">
+        <h2 className="text-sm font-medium">Filters</h2>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="min-h-10"
+          onClick={() => setFiltersOpen((open) => !open)}
+          aria-expanded={filtersOpen}
+        >
+          {filtersOpen ? "Hide" : "Show"}
+          <ChevronDown
+            className={cn(
+              "ml-1 h-4 w-4 transition-transform",
+              filtersOpen && "rotate-180",
+            )}
+          />
+        </Button>
+      </div>
+
+      <div className={cn("space-y-6 p-4", !filtersOpen && "hidden md:block")}>
       <div className="space-y-3">
         <h2 className="text-sm font-medium">Sort results</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -329,7 +352,7 @@ export function BrowseFilters({ filters, onChange }: BrowseFiltersProps) {
                 type="button"
                 onClick={() => toggleTag(tag)}
                 className={cn(
-                  "rounded-md border px-2.5 py-1 text-xs transition-colors",
+                  "min-h-10 rounded-md border px-2.5 py-2 text-xs transition-colors",
                   selected
                     ? "border-secondary bg-secondary text-secondary-foreground"
                     : "border-border text-muted-foreground hover:bg-muted/50"
@@ -349,6 +372,7 @@ export function BrowseFilters({ filters, onChange }: BrowseFiltersProps) {
         <Button type="button" variant="outline" onClick={clearFilters}>
           Clear all
         </Button>
+      </div>
       </div>
     </div>
   );

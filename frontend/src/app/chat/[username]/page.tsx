@@ -62,22 +62,24 @@ export default function ChatThreadPage() {
           <Link href="/connections" className="text-sm text-primary hover:underline">
             Back to connections
           </Link>
-          <div className="mt-2 flex items-center gap-2">
+          <div className="mt-2 flex flex-wrap items-center gap-2">
             <h1 className="text-xl font-semibold">@{username}</h1>
             <span
               className={`text-xs ${isConnected ? "text-green-600" : "text-muted-foreground"}`}
             >
               {isConnected ? "Live" : "Connecting..."}
             </span>
+            <div className="ml-auto flex flex-wrap items-center gap-2 max-sm:w-full max-sm:justify-end">
             <Button
               type="button"
               size="sm"
               variant="outline"
               onClick={() => setPlanDateOpen(true)}
-              className="ml-auto"
+              className="max-sm:px-2"
+              aria-label="Plan date"
             >
-              <CalendarHeart className="mr-1.5 h-4 w-4" />
-              Plan date
+              <CalendarHeart className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Plan date</span>
             </Button>
             <Button
               type="button"
@@ -85,10 +87,13 @@ export default function ChatThreadPage() {
               variant="outline"
               disabled={!isConnected || callActive}
               onClick={() => startCall(username)}
+              className="max-sm:px-2"
+              aria-label="Audio call"
             >
-              <Phone className="mr-1.5 h-4 w-4" />
-              Audio call
+              <Phone className="h-4 w-4 sm:mr-1.5" />
+              <span className="hidden sm:inline">Audio call</span>
             </Button>
+            </div>
           </div>
           {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
         </div>

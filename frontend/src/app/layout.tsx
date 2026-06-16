@@ -1,5 +1,6 @@
 import { Fira_Code, Outfit } from "next/font/google";
 import Providers from "@/utils/proivers";
+import { appViewport } from "@/lib/viewport";
 import "../globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -12,6 +13,8 @@ const firaCode = Fira_Code({
   subsets: ["latin"],
   variable: "--font-fira-code",
 });
+
+export const viewport = appViewport;
 
 export default function RootLayout({
   children,

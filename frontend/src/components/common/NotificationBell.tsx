@@ -76,7 +76,7 @@ export function NotificationBell() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative">
+        <Button variant="ghost" size="touch" className="relative">
           <Bell className="h-4 w-4" />
           {count > 0 && (
             <Badge className="absolute -right-1 -top-1 h-5 min-w-5 px-1 text-[10px]">

@@ -8,7 +8,7 @@ export const Hero = () => {
 
   return (
     <div className="flex h-full flex-col items-center justify-center space-y-8 p-8 text-center">
-      <h1 className="text-bold text-3xl font-bold sm:text-xl md:text-5xl">
+      <h1 className="text-3xl font-bold sm:text-4xl md:text-5xl">
         Find your perfect match from anywhere.
       </h1>
       <p className="max-w-[800px] text-sm md:text-xl">

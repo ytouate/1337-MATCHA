@@ -90,7 +90,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="h-dvh">
       <Navbar />
-      <main className="h-full overflow-y-auto pt-16">{children}</main>
+      <main className="h-full overflow-y-auto pt-[calc(4rem+env(safe-area-inset-top))]">
+        {children}
+      </main>
       <Suspense fallback={null}>
         <VerifiedRedirectHandler />
       </Suspense>
