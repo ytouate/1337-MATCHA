@@ -1,8 +1,8 @@
 import { authApi } from "@/api/client";
 import { useMutation } from "@tanstack/react-query";
 import type { PasswordResetRequest } from "@/api/model";
-import { APIError } from "@/types/auth";
 import { useToast } from "../use-toast";
+import { formatApiError } from "@/lib/apiErrors";
 
 export function useForgotPassword() {
   const { toast } = useToast();
@@ -17,12 +17,11 @@ export function useForgotPassword() {
         description: "We've sent you a password reset link",
       });
     },
-    onError: (error: APIError) => {
+    onError: (error) => {
       toast({
         variant: "error",
         title: "Uh oh! Something went wrong.",
-        description:
-          error?.response?.data?.detail || "Failed to send reset link",
+        description: formatApiError(error, "Failed to send reset link"),
       });
     },
   });

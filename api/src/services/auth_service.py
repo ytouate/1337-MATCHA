@@ -3,7 +3,6 @@ from typing import Any
 
 import jose
 from fastapi import BackgroundTasks, HTTPException, Response, status
-from fastapi.responses import JSONResponse
 
 from src.core.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
@@ -68,7 +67,7 @@ def signup(payload: SignupData, background_tasks: BackgroundTasks) -> dict:
     return {"message": "User successfully registered"}
 
 
-def signin(payload: SignInData) -> tuple[dict, dict[str, str]] | JSONResponse:
+def signin(payload: SignInData) -> tuple[dict, dict[str, str]]:
     with PgDatabase() as db:
         db.cursor.execute(
             "SELECT * FROM users WHERE email=%(login)s or username=%(login)s",
@@ -79,10 +78,16 @@ def signin(payload: SignInData) -> tuple[dict, dict[str, str]] | JSONResponse:
     if not user or not user.get("password") or not verify_password(
         payload.password, user["password"]
     ):
-        return JSONResponse(content={"error": "Invalid credentials"}, status_code=401)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials",
+        )
 
     if not user["is_verified"]:
-        return JSONResponse(content={"error": "Email not verified"}, status_code=401)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Email not verified",
+        )
 
     access_token = generate_jwt_token(
         type="access_token",

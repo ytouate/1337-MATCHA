@@ -62,10 +62,10 @@ def validate_image(file: UploadFile) -> None:
             )
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid image file: {str(e)}",
+            detail="Invalid image file",
         )
 
 
@@ -112,10 +112,10 @@ async def upload_files(
 
         return uploaded_files
 
-    except S3Error as e:
+    except S3Error:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error uploading file to storage: {str(e)}",
+            detail="Error uploading file to storage",
         )
     finally:
         for file in files:

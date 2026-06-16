@@ -5,6 +5,10 @@ import { useQueryClient } from "@tanstack/react-query";
 import { notificationsApi } from "@/api/client";
 import type { ChatMessageResponse, NotificationResponse } from "@/api/model";
 import { useChatSocket } from "@/contexts/ChatSocketContext";
+import { formatChatError } from "@/lib/apiErrors";
+
+const CHAT_ERROR = "Could not load this conversation. Please try again.";
+const SEND_ERROR = "Could not send your message. Please try again.";
 
 export function useChatThread(username: string) {
   const queryClient = useQueryClient();
@@ -82,9 +86,9 @@ export function useChatThread(username: string) {
           setMessages(history);
         }
       })
-      .catch((err: Error) => {
+      .catch(() => {
         if (!cancelled) {
-          setError(err.message);
+          setError(CHAT_ERROR);
           setMessages([]);
         }
       })
@@ -104,7 +108,7 @@ export function useChatThread(username: string) {
 
     return subscribe(username, {
       onMessage: appendMessage,
-      onError: (detail) => setError(detail),
+      onError: (detail) => setError(formatChatError(detail) ?? CHAT_ERROR),
     });
   }, [username, subscribe, appendMessage]);
 
@@ -114,9 +118,9 @@ export function useChatThread(username: string) {
       setError(null);
       try {
         await sendMessage(username, body);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to send message");
-        throw err;
+      } catch {
+        setError(SEND_ERROR);
+        throw new Error(SEND_ERROR);
       } finally {
         setIsSending(false);
       }

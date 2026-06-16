@@ -36,10 +36,7 @@ async def signup(payload: SignupData, background_tasks: BackgroundTasks):
 
 @router.post("/signin")
 async def signin(payload: SignInData, response: Response):
-    result = auth_service.signin(payload)
-    if isinstance(result, JSONResponse):
-        return result
-    user, tokens = result
+    user, tokens = auth_service.signin(payload)
     auth_service.set_auth_cookies(response, tokens)
     return {"user": user}
 

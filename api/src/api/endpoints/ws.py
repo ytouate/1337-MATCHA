@@ -51,62 +51,70 @@ async def websocket_endpoint(websocket: WebSocket):
 
     try:
         while True:
-            raw = await websocket.receive_text()
             try:
-                payload = json.loads(raw)
-            except json.JSONDecodeError:
-                await _send_error(websocket, "Invalid JSON payload")
-                continue
-
-            event = payload.get("event")
-            data: dict[str, Any] = payload.get("data") or {}
-
-            if event == "chat.history":
-                peer_username = data.get("username")
-                if not peer_username:
-                    await _send_error(websocket, "username is required")
+                raw = await websocket.receive_text()
+                try:
+                    payload = json.loads(raw)
+                except json.JSONDecodeError:
+                    await _send_error(websocket, "Invalid JSON payload")
                     continue
-                try:
-                    messages = chat_service.get_messages(user_id, peer_username)
-                    await websocket.send_json(
-                        {
-                            "event": "chat.history",
-                            "data": {
-                                "username": peer_username,
-                                "messages": messages,
-                            },
-                        }
-                    )
-                except HTTPException as exc:
-                    await _send_error(websocket, str(exc.detail))
 
-            elif event == "chat.send":
-                receiver_username = data.get("username")
-                body = data.get("body", "")
-                if not receiver_username or not body:
-                    await _send_error(websocket, "username and body are required")
-                    continue
-                try:
-                    message = chat_service.send_message(
-                        user_id, receiver_username, body
-                    )
-                    await websocket.send_json(
-                        {
-                            "event": "chat.message",
-                            "data": {
-                                "username": receiver_username,
-                                "message": message,
-                            },
-                        }
-                    )
-                except HTTPException as exc:
-                    await _send_error(websocket, str(exc.detail))
+                event = payload.get("event")
+                data: dict[str, Any] = payload.get("data") or {}
 
-            elif event in CALL_EVENT_MAP:
-                try:
-                    await relay_call_event(user_id, event, data)
-                except HTTPException as exc:
-                    await _send_error(websocket, str(exc.detail))
+                if event == "chat.history":
+                    peer_username = data.get("username")
+                    if not peer_username:
+                        await _send_error(websocket, "username is required")
+                        continue
+                    try:
+                        messages = chat_service.get_messages(user_id, peer_username)
+                        await websocket.send_json(
+                            {
+                                "event": "chat.history",
+                                "data": {
+                                    "username": peer_username,
+                                    "messages": messages,
+                                },
+                            }
+                        )
+                    except HTTPException as exc:
+                        await _send_error(websocket, str(exc.detail))
+
+                elif event == "chat.send":
+                    receiver_username = data.get("username")
+                    body = data.get("body", "")
+                    if not receiver_username or not body:
+                        await _send_error(
+                            websocket, "username and body are required"
+                        )
+                        continue
+                    try:
+                        message = chat_service.send_message(
+                            user_id, receiver_username, body
+                        )
+                        await websocket.send_json(
+                            {
+                                "event": "chat.message",
+                                "data": {
+                                    "username": receiver_username,
+                                    "message": message,
+                                },
+                            }
+                        )
+                    except HTTPException as exc:
+                        await _send_error(websocket, str(exc.detail))
+
+                elif event in CALL_EVENT_MAP:
+                    try:
+                        await relay_call_event(user_id, event, data)
+                    except HTTPException as exc:
+                        await _send_error(websocket, str(exc.detail))
+
+            except Exception:
+                await _send_error(
+                    websocket, "An unexpected error occurred. Please try again."
+                )
 
     except WebSocketDisconnect:
         pass

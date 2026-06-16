@@ -1,9 +1,10 @@
 import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/auth";
-import { SignInResponse, APIError } from "@/types/auth";
+import { SignInResponse } from "@/types/auth";
 import { useToast } from "../use-toast";
 import type { SignInData } from "@/api/model";
 import { authApi } from "@/api/client";
+import { formatApiError } from "@/lib/apiErrors";
 
 export const useSignin = (onSuccessCallback?: () => void) => {
   const { setUser } = useAuthStore();
@@ -24,15 +25,14 @@ export const useSignin = (onSuccessCallback?: () => void) => {
 
       if (onSuccessCallback) onSuccessCallback();
     },
-    onError: (error: APIError) => {
-      const message =
-        error?.response?.data?.detail ||
-        error?.response?.data?.error ||
-        "There was a problem signing you in, please try again!";
+    onError: (error) => {
       toast({
         variant: "error",
         title: "Uh oh! Something went wrong.",
-        description: message,
+        description: formatApiError(
+          error,
+          "There was a problem signing you in, please try again!",
+        ),
         duration: 2000,
       });
     },

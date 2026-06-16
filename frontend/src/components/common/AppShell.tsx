@@ -9,6 +9,7 @@ import { ForgotPassword } from "@/components/auth/ForgotPassword";
 import { EmailConfirmationModal } from "@/components/auth/EmailConfirmationModal";
 import { useAuthModal } from "@/contexts/AuthModalContext";
 import { useToast } from "@/hooks/use-toast";
+import { sanitizeDisplayMessage } from "@/lib/apiErrors";
 
 function VerifiedRedirectHandler() {
   const searchParams = useSearchParams();
@@ -31,7 +32,7 @@ function VerifiedRedirectHandler() {
       toast({
         variant: "error",
         title: "42 sign in failed",
-        description: oauthError,
+        description: sanitizeDisplayMessage(decodeURIComponent(oauthError)),
       });
       router.replace("/");
     }

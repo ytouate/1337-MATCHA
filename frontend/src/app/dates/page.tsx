@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import type { DateProposalResponse } from "@/api/model";
 import { AuthenticatedLayout } from "@/components/common/AuthenticatedLayout";
+import { QueryErrorState } from "@/components/common/QueryErrorState";
 import { DateListRow } from "@/components/dates/DateListRow";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -47,8 +48,18 @@ function DateSection({
 
 export default function DatesPage() {
   const { toast } = useToast();
-  const { data: upcoming = [], isLoading: upcomingLoading } = useDateList(true);
-  const { data: allDates = [], isLoading: allLoading } = useDateList(false);
+  const {
+    data: upcoming = [],
+    isLoading: upcomingLoading,
+    isError: upcomingError,
+    refetch: refetchUpcoming,
+  } = useDateList(true);
+  const {
+    data: allDates = [],
+    isLoading: allLoading,
+    isError: allError,
+    refetch: refetchAll,
+  } = useDateList(false);
   const { cancelMutation } = useDateMutations();
 
   const pending = allDates.filter(
@@ -56,6 +67,12 @@ export default function DatesPage() {
   );
   const sent = allDates.filter(isPendingSent);
   const isLoading = upcomingLoading || allLoading;
+  const isError = upcomingError || allError;
+
+  const handleRetry = () => {
+    void refetchUpcoming();
+    void refetchAll();
+  };
 
   const handleWithdraw = async (dateId: number) => {
     try {
@@ -83,7 +100,15 @@ export default function DatesPage() {
               <Skeleton key={index} className="h-16 w-full rounded-lg" />
             ))}
 
-          {!isLoading && (
+          {!isLoading && isError && (
+            <QueryErrorState
+              title="Could not load dates"
+              description="We couldn't fetch your date proposals right now."
+              onRetry={handleRetry}
+            />
+          )}
+
+          {!isLoading && !isError && (
             <>
               <DateSection
                 title="Pending"

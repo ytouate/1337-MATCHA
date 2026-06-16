@@ -212,7 +212,7 @@ class TestSignin:
             )
 
         assert response.status_code == 401
-        assert response.json()["error"] == "Invalid credentials"
+        assert response.json()["detail"] == "Invalid credentials"
 
     def test_signin_rejects_unverified_email(
         self, client, verified_user, mock_pg_cursor
@@ -228,7 +228,7 @@ class TestSignin:
             )
 
         assert response.status_code == 401
-        assert response.json()["error"] == "Email not verified"
+        assert response.json()["detail"] == "Email not verified"
 
 
 class TestPasswordReset:

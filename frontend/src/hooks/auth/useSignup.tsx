@@ -1,8 +1,8 @@
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "../use-toast";
-import { isAxiosError } from "axios";
 import type { SignupData } from "@/api/model";
 import { authApi } from "@/api/client";
+import { formatApiError } from "@/lib/apiErrors";
 
 export const useSignup = (onSuccessCallback?: () => void) => {
   const { toast } = useToast();
@@ -21,16 +21,13 @@ export const useSignup = (onSuccessCallback?: () => void) => {
       if (onSuccessCallback) onSuccessCallback();
     },
     onError: (error) => {
-      const responseErrorMessage =
-        isAxiosError(error) && error.response?.data?.detail
-          ? String(error.response.data.detail)
-          : isAxiosError(error) && error.response?.data?.message
-            ? String(error.response.data.message)
-            : "There was a problem signing you up, please try again!";
       toast({
         variant: "error",
         title: "Uh oh! Something went wrong.",
-        description: responseErrorMessage,
+        description: formatApiError(
+          error,
+          "There was a problem signing you up, please try again!",
+        ),
         duration: 2000,
       });
     },

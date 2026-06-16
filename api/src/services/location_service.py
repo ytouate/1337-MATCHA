@@ -26,7 +26,7 @@ async def geocode_location(payload: GeocodeRequest) -> GeocodeResponse:
     except httpx.HTTPError as exc:
         raise HTTPException(
             status_code=502,
-            detail=f"Geocoding service unavailable: {exc}",
+            detail="Geocoding service unavailable",
         ) from exc
 
     if not results:

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 import dotenv
@@ -18,7 +19,10 @@ from src.api.endpoints.upload import router as upload_router
 from src.api.endpoints.users import router as users_router
 from src.api.endpoints.ws import router as ws_router
 from src.middleware.cors import setup_cors
+from src.core.exceptions import register_exception_handlers
 from src.services import notification_service
+
+logging.basicConfig(level=logging.INFO)
 
 
 @asynccontextmanager
@@ -36,6 +40,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+register_exception_handlers(app)
 setup_cors(app)
 
 app.include_router(auth_router)

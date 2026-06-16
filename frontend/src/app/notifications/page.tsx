@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AuthenticatedLayout } from "@/components/common/AuthenticatedLayout";
+import { QueryErrorState } from "@/components/common/QueryErrorState";
 import { notificationsApi } from "@/api/client";
 import type { NotificationResponse } from "@/api/model";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ import {
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
 
-  const { data: notifications = [], isLoading } = useQuery({
+  const { data: notifications = [], isLoading, isError, refetch } = useQuery({
     queryKey: ["notifications"],
     queryFn: async () =>
       (await notificationsApi.listNotificationsApiNotificationsGet()) as NotificationResponse[],
@@ -51,11 +52,20 @@ export default function NotificationsPage() {
               <Skeleton key={i} className="h-14 w-full rounded-lg" />
             ))}
 
-          {!isLoading && notifications.length === 0 && (
+          {!isLoading && isError && (
+            <QueryErrorState
+              title="Could not load notifications"
+              onRetry={() => void refetch()}
+            />
+          )}
+
+          {!isLoading && !isError && notifications.length === 0 && (
             <p className="text-sm text-muted-foreground">No notifications yet.</p>
           )}
 
-          {notifications.map((notification) => {
+          {!isLoading &&
+            !isError &&
+            notifications.map((notification) => {
             const preview =
               notification.type === "message" &&
               typeof notification.payload?.preview === "string"

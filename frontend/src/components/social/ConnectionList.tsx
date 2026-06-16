@@ -6,6 +6,7 @@ import { CalendarHeart, MessageCircle } from "lucide-react";
 import { useState } from "react";
 import { socialApi } from "@/api/client";
 import { ScheduleDateDialog } from "@/components/dates/ScheduleDateDialog";
+import { QueryErrorState } from "@/components/common/QueryErrorState";
 import { ProfileImage } from "@/components/profile/ProfileImage";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -29,7 +30,7 @@ export function ConnectionList({
   emptyMessage = "No connections yet. Like profiles that like you back to connect.",
 }: ConnectionListProps) {
   const [planDateUsername, setPlanDateUsername] = useState<string | null>(null);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["connections"],
     queryFn: async () =>
       (await socialApi.getMyConnectionsApiUsersMeConnectionsGet()) as {
@@ -46,6 +47,16 @@ export function ConnectionList({
           <Skeleton key={index} className="h-16 w-full rounded-lg" />
         ))}
       </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <QueryErrorState
+        title="Could not load connections"
+        description="We couldn't fetch your connections right now."
+        onRetry={() => void refetch()}
+      />
     );
   }
 
