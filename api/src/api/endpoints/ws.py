@@ -4,7 +4,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from jose import JWTError, jwt
 
-from src.core.config import JWT_ALGORITHM, JWT_SECRET_KEY
+from src.core.config import IS_PRODUCTION, JWT_ALGORITHM, JWT_SECRET_KEY
 from src.db.database import PgDatabase
 from src.services import chat_service
 from src.services.call_service import CALL_EVENT_MAP, relay_call_event
@@ -15,9 +15,9 @@ router = APIRouter(tags=["WebSocket"])
 
 
 def _decode_ws_user(websocket: WebSocket) -> dict | None:
-    token = websocket.cookies.get("access_token") or websocket.query_params.get(
-        "token"
-    )
+    token = websocket.cookies.get("access_token")
+    if not token and not IS_PRODUCTION:
+        token = websocket.query_params.get("token")
     if not token:
         return None
     try:
@@ -62,6 +62,10 @@ async def websocket_endpoint(websocket: WebSocket):
                 event = payload.get("event")
                 data: dict[str, Any] = payload.get("data") or {}
 
+                if event == "ping":
+                    await websocket.send_json({"event": "pong", "data": {}})
+                    continue
+
                 if event == "chat.history":
                     peer_username = data.get("username")
                     if not peer_username:
@@ -85,9 +89,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     receiver_username = data.get("username")
                     body = data.get("body", "")
                     if not receiver_username or not body:
-                        await _send_error(
-                            websocket, "username and body are required"
-                        )
+                        await _send_error(websocket, "username and body are required")
                         continue
                     try:
                         message = chat_service.send_message(

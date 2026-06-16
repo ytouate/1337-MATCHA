@@ -11,6 +11,7 @@ from PIL import Image
 
 from src.core.config import (
     ALLOWED_EXTENSIONS,
+    IMAGE_FORMAT_TO_MIME,
     MAX_FILE_SIZE,
     MAX_IMAGE_DIMENSIONS,
     MAX_UPLOAD_FILES,
@@ -29,44 +30,55 @@ minio_client = Minio(
 )
 
 
-def validate_image(file: UploadFile) -> None:
-    ext = os.path.splitext(file.filename)[1].lower()
+def _detect_image(file_data: bytes) -> Image.Image:
+    try:
+        image = Image.open(io.BytesIO(file_data))
+        image.load()
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid image file",
+        ) from exc
+
+    if (
+        image.width > MAX_IMAGE_DIMENSIONS[0]
+        or image.height > MAX_IMAGE_DIMENSIONS[1]
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Image too large. Maximum dimensions: "
+                f"{MAX_IMAGE_DIMENSIONS[0]}x{MAX_IMAGE_DIMENSIONS[1]}"
+            ),
+        )
+
+    if image.format not in IMAGE_FORMAT_TO_MIME:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid image format",
+        )
+
+    return image
+
+
+def validate_image(file: UploadFile, file_data: bytes) -> Image.Image:
+    ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"File type not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}",
+            detail=(
+                "File type not allowed. Allowed types: "
+                f"{', '.join(sorted(ALLOWED_EXTENSIONS))}"
+            ),
         )
 
-    if file.size and file.size > MAX_FILE_SIZE:
+    if len(file_data) > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"File too large. Maximum size: {MAX_FILE_SIZE / 1024 / 1024}MB",
         )
 
-    try:
-        image = Image.open(io.BytesIO(file.file.read()))
-        file.file.seek(0)
-
-        if (
-            image.width > MAX_IMAGE_DIMENSIONS[0]
-            or image.height > MAX_IMAGE_DIMENSIONS[1]
-        ):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Image too large. Maximum dimensions: {MAX_IMAGE_DIMENSIONS[0]}x{MAX_IMAGE_DIMENSIONS[1]}",
-            )
-
-        if image.format not in ["JPEG", "PNG", "GIF"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid image format"
-            )
-    except HTTPException:
-        raise
-    except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid image file",
-        )
+    return _detect_image(file_data)
 
 
 async def upload_files(
@@ -81,22 +93,23 @@ async def upload_files(
     try:
         uploaded_files = []
         for file in files:
-            validate_image(file)
+            file_data = await file.read()
+            image = validate_image(file, file_data)
 
-            ext = os.path.splitext(file.filename)[1].lower()
+            ext = os.path.splitext(file.filename or "")[1].lower()
             unique_filename = f"{current_user['email']}/{uuid.uuid4()}{ext}"
 
             if not minio_client.bucket_exists(MINIO_BUCKET_NAME):
                 minio_client.make_bucket(MINIO_BUCKET_NAME)
 
-            file_data = await file.read()
+            content_type = IMAGE_FORMAT_TO_MIME[image.format]
 
             minio_client.put_object(
                 bucket_name=MINIO_BUCKET_NAME,
                 object_name=unique_filename,
                 data=io.BytesIO(file_data),
                 length=len(file_data),
-                content_type=file.content_type,
+                content_type=content_type,
             )
 
             url = minio_client.presigned_get_object(

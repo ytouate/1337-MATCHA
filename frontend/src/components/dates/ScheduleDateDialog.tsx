@@ -27,7 +27,7 @@ const scheduleDateSchema = z.object({
   scheduled_at: z.date().refine((value) => value > new Date(), {
     message: "Pick a future date and time",
   }),
-  venueQuery: z.string().optional(),
+  venueQuery: z.string().max(128).optional(),
   location_label: z.string().max(128).optional().nullable(),
   latitude: z.number().optional().nullable(),
   longitude: z.number().optional().nullable(),

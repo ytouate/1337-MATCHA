@@ -1,8 +1,5 @@
 "use client";
 
-import Link from "next/link";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bell } from "lucide-react";
 import { notificationsApi } from "@/api/client";
 import type { NotificationResponse } from "@/api/model";
 import { Badge } from "@/components/ui/badge";
@@ -17,9 +14,15 @@ import {
   getNotificationHref,
   getNotificationListLabel,
 } from "@/lib/notificationPresentation";
+import { REALTIME_POLL_INTERVAL_MS } from "@/lib/realtimeConfig";
+import { useAuthStore } from "@/store/auth";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Bell } from "lucide-react";
+import Link from "next/link";
 
 export function NotificationBell() {
   const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuthStore();
 
   const { data: unreadCountData } = useQuery({
     queryKey: ["notifications", "unread-count"],
@@ -27,6 +30,7 @@ export function NotificationBell() {
       (await notificationsApi.getUnreadCountApiNotificationsUnreadCountGet()) as {
         count: number;
       },
+    refetchInterval: isAuthenticated ? REALTIME_POLL_INTERVAL_MS : false,
   });
 
   const cachedNotifications =
@@ -50,20 +54,22 @@ export function NotificationBell() {
 
   const markRead = async (notificationId: number) => {
     await notificationsApi.markNotificationReadApiNotificationsNotificationIdReadPatch(
-      notificationId
+      notificationId,
     );
 
     const readAt = new Date().toISOString();
-    queryClient.setQueryData<NotificationResponse[]>(["notifications"], (current) =>
-      (current ?? []).map((notification) =>
-        notification.id === notificationId
-          ? { ...notification, read_at: readAt }
-          : notification
-      )
+    queryClient.setQueryData<NotificationResponse[]>(
+      ["notifications"],
+      (current) =>
+        (current ?? []).map((notification) =>
+          notification.id === notificationId
+            ? { ...notification, read_at: readAt }
+            : notification,
+        ),
     );
     queryClient.setQueryData<{ count: number }>(
       ["notifications", "unread-count"],
-      (current) => ({ count: Math.max(0, (current?.count ?? 0) - 1) })
+      (current) => ({ count: Math.max(0, (current?.count ?? 0) - 1) }),
     );
   };
 
@@ -98,7 +104,9 @@ export function NotificationBell() {
               }}
               className="block border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-muted/50"
             >
-              <p className="text-sm font-medium">{getActorName(notification)}</p>
+              <p className="text-sm font-medium">
+                {getActorName(notification)}
+              </p>
               <p className="text-xs text-muted-foreground">
                 {getNotificationListLabel(notification)}
               </p>

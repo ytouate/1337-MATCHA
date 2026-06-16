@@ -1,5 +1,16 @@
 "use client";
 
+import type { ChatMessageResponse, NotificationResponse } from "@/api/model";
+import { getActiveChatUsername } from "@/lib/messageNotifications";
+import {
+  REALTIME_HEARTBEAT_INTERVAL_MS,
+  REALTIME_HEARTBEAT_TIMEOUT_MS,
+  REALTIME_MAX_DELAY_MS,
+  getReconnectDelayMs,
+} from "@/lib/realtimeConfig";
+import { useAuthStore } from "@/store/auth";
+import { useQueryClient } from "@tanstack/react-query";
+import { usePathname } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -9,18 +20,20 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { usePathname } from "next/navigation";
-import { useAuthStore } from "@/store/auth";
-import type { ChatMessageResponse, NotificationResponse } from "@/api/model";
-import { getActiveChatUsername } from "@/lib/messageNotifications";
 
 type CallSignalData = Record<string, unknown>;
 
 type WsEvent =
-  | { event: "chat.history"; data: { username: string; messages: ChatMessageResponse[] } }
-  | { event: "chat.message"; data: { username: string; message: ChatMessageResponse } }
+  | {
+      event: "chat.history";
+      data: { username: string; messages: ChatMessageResponse[] };
+    }
+  | {
+      event: "chat.message";
+      data: { username: string; message: ChatMessageResponse };
+    }
   | { event: "notification.new"; data: { notification: NotificationResponse } }
+  | { event: "pong"; data: Record<string, never> }
   | { event: "error"; data: { detail: string } }
   | { event: `call.${string}`; data: CallSignalData };
 
@@ -34,13 +47,13 @@ interface ChatSocketContextValue {
     handlers: {
       onMessage?: (message: ChatMessageResponse) => void;
       onError?: (detail: string) => void;
-    }
+    },
   ) => () => void;
   subscribeNotifications: (
-    handler: (notification: NotificationResponse) => void
+    handler: (notification: NotificationResponse) => void,
   ) => () => void;
   subscribeCall: (
-    handler: (event: string, data: CallSignalData) => void
+    handler: (event: string, data: CallSignalData) => void,
   ) => () => void;
 }
 
@@ -55,7 +68,7 @@ function waitForAuth(): Promise<void> {
     const timeout = setTimeout(() => {
       unsub();
       reject(new Error("Authentication timeout"));
-    }, 10000);
+    }, REALTIME_MAX_DELAY_MS);
 
     const unsub = useAuthStore.subscribe((state) => {
       if (state.isAuthenticated) {
@@ -115,6 +128,13 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
   const connectRef = useRef<() => void>(() => {});
+  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
+  const heartbeatTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const awaitingPongRef = useRef(false);
 
   isAuthenticatedRef.current = isAuthenticated;
   activeChatUsernameRef.current = getActiveChatUsername(pathname);
@@ -125,13 +145,13 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
       fn: (handlers: {
         onMessage?: (message: ChatMessageResponse) => void;
         onError?: (detail: string) => void;
-      }) => void
+      }) => void,
     ) => {
       const set = subscribersRef.current.get(username);
       if (!set) return;
       set.forEach((handlers) => fn(handlers));
     },
-    []
+    [],
   );
 
   const handleEvent = useCallback(
@@ -158,6 +178,15 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      if (payload.event === "pong") {
+        awaitingPongRef.current = false;
+        if (heartbeatTimeoutRef.current) {
+          clearTimeout(heartbeatTimeoutRef.current);
+          heartbeatTimeoutRef.current = null;
+        }
+        return;
+      }
+
       if (payload.event === "notification.new") {
         const { notification } = payload.data;
         const isViewingMessageThread =
@@ -168,16 +197,16 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
           ["notifications"],
           (current) => {
             const withoutDuplicate = (current ?? []).filter(
-              (item) => item.id !== notification.id
+              (item) => item.id !== notification.id,
             );
             return [notification, ...withoutDuplicate];
-          }
+          },
         );
 
         if (!notification.read_at && !isViewingMessageThread) {
           queryClient.setQueryData<{ count: number }>(
             ["notifications", "unread-count"],
-            (current) => ({ count: (current?.count ?? 0) + 1 })
+            (current) => ({ count: (current?.count ?? 0) + 1 }),
           );
         }
 
@@ -211,18 +240,59 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    [notifyThread, queryClient]
+    [notifyThread, queryClient],
   );
 
   const handleEventRef = useRef(handleEvent);
   handleEventRef.current = handleEvent;
+
+  const stopHeartbeat = useCallback(() => {
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+    if (heartbeatTimeoutRef.current) {
+      clearTimeout(heartbeatTimeoutRef.current);
+      heartbeatTimeoutRef.current = null;
+    }
+    awaitingPongRef.current = false;
+  }, []);
+
+  const startHeartbeat = useCallback(
+    (socket: WebSocket) => {
+      stopHeartbeat();
+      heartbeatIntervalRef.current = setInterval(() => {
+        if (socket.readyState !== WebSocket.OPEN) {
+          return;
+        }
+
+        awaitingPongRef.current = true;
+        socket.send(JSON.stringify({ event: "ping", data: {} }));
+
+        if (heartbeatTimeoutRef.current) {
+          clearTimeout(heartbeatTimeoutRef.current);
+        }
+
+        heartbeatTimeoutRef.current = setTimeout(() => {
+          if (awaitingPongRef.current) {
+            socket.close();
+          }
+        }, REALTIME_HEARTBEAT_TIMEOUT_MS);
+      }, REALTIME_HEARTBEAT_INTERVAL_MS);
+    },
+    [stopHeartbeat],
+  );
+
+  const syncNotifications = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+  }, [queryClient]);
 
   const scheduleReconnect = useCallback(() => {
     if (!isAuthenticatedRef.current || reconnectTimerRef.current) {
       return;
     }
 
-    const delay = Math.min(1000 * 2 ** reconnectAttemptRef.current, 10000);
+    const delay = getReconnectDelayMs(reconnectAttemptRef.current);
     reconnectTimerRef.current = setTimeout(() => {
       reconnectTimerRef.current = null;
       reconnectAttemptRef.current += 1;
@@ -231,6 +301,8 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const disconnect = useCallback(() => {
+    stopHeartbeat();
+
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
@@ -247,7 +319,7 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
       socket.onerror = null;
       socket.close();
     }
-  }, []);
+  }, [stopHeartbeat]);
 
   const connect = useCallback(() => {
     if (!isAuthenticatedRef.current) {
@@ -273,6 +345,8 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
     socket.onopen = () => {
       reconnectAttemptRef.current = 0;
       setIsConnected(true);
+      startHeartbeat(socket);
+      syncNotifications();
     };
 
     socket.onmessage = (event) => {
@@ -284,6 +358,7 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
     };
 
     socket.onclose = () => {
+      stopHeartbeat();
       if (socketRef.current === socket) {
         socketRef.current = null;
         setIsConnected(false);
@@ -294,7 +369,7 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
     socket.onerror = () => {
       socket.close();
     };
-  }, [scheduleReconnect]);
+  }, [scheduleReconnect, startHeartbeat, stopHeartbeat, syncNotifications]);
 
   connectRef.current = connect;
 
@@ -313,6 +388,23 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
     };
   }, [connect, disconnect, isAuthenticated]);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        syncNotifications();
+      }
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [isAuthenticated, syncNotifications]);
+
   const waitForSocket = useCallback(async () => {
     await waitForAuth();
     isAuthenticatedRef.current = useAuthStore.getState().isAuthenticated;
@@ -330,13 +422,10 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
     }
 
     await new Promise<void>((resolve, reject) => {
-      const timeout = setTimeout(
-        () => {
-          cleanup();
-          reject(new Error("WebSocket connection timeout"));
-        },
-        10000
-      );
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error("WebSocket connection timeout"));
+      }, REALTIME_MAX_DELAY_MS);
 
       let socketListener: WebSocket | null = null;
 
@@ -408,7 +497,7 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
       return new Promise<ChatMessageResponse[]>((resolve, reject) => {
         pendingHistoryRef.current.set(username, { resolve, reject });
         socketRef.current?.send(
-          JSON.stringify({ event: "chat.history", data: { username } })
+          JSON.stringify({ event: "chat.history", data: { username } }),
         );
 
         setTimeout(() => {
@@ -416,10 +505,10 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
             pendingHistoryRef.current.delete(username);
             reject(new Error("Timed out loading chat history"));
           }
-        }, 10000);
+        }, REALTIME_MAX_DELAY_MS);
       });
     },
-    [waitForSocket]
+    [waitForSocket],
   );
 
   const sendMessage = useCallback(
@@ -437,7 +526,7 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
           JSON.stringify({
             event: "chat.send",
             data: { username, body },
-          })
+          }),
         );
 
         setTimeout(() => {
@@ -445,10 +534,10 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
             pendingSendRef.current.delete(username);
             reject(new Error("Timed out sending message"));
           }
-        }, 10000);
+        }, REALTIME_MAX_DELAY_MS);
       });
     },
-    [waitForSocket]
+    [waitForSocket],
   );
 
   const subscribe = useCallback(
@@ -457,7 +546,7 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
       handlers: {
         onMessage?: (message: ChatMessageResponse) => void;
         onError?: (detail: string) => void;
-      }
+      },
     ) => {
       const current = subscribersRef.current.get(username) ?? new Set();
       current.add(handlers);
@@ -472,7 +561,7 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
         }
       };
     },
-    []
+    [],
   );
 
   const sendCallSignal = useCallback(
@@ -505,7 +594,7 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
         notificationSubscribersRef.current.delete(handler);
       };
     },
-    []
+    [],
   );
 
   return (

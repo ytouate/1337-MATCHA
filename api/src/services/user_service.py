@@ -8,11 +8,17 @@ from src.db.database import PgDatabase
 from src.schemas.user import Gender, UserPut, UserUpdate
 from src.services import email_service
 
-USER_SELECT_FIELDS = """
-    id, email, username, first_name, last_name, gender,
+PUBLIC_USER_SELECT_FIELDS = """
+    id, username, first_name, last_name, gender,
     bio, sexual_preference, latitude, longitude, location_label,
     birthdate, is_verified, is_profile_completed, fame_rating, last_seen_at
 """
+
+OWNER_USER_SELECT_FIELDS = f"""
+    {PUBLIC_USER_SELECT_FIELDS.strip()}, email
+"""
+
+USER_SELECT_FIELDS = OWNER_USER_SELECT_FIELDS
 
 
 def _normalize_image_path(url: str) -> str:
@@ -91,9 +97,7 @@ def _calculate_age(birthdate) -> Optional[int]:
     return age
 
 
-def _enrich_user_profile(
-    db, user: dict, viewer_id: Optional[int] = None
-) -> dict:
+def _enrich_user_profile(db, user: dict, viewer_id: Optional[int] = None) -> dict:
     user_id = user["id"]
     user["images"] = _get_user_images(db, user_id)
     user["interests"] = _get_user_interests(db, user_id)
@@ -230,10 +234,11 @@ def _queue_email_verification_on_email_change(
     email_service.queue_verification_email(email, background_tasks)
 
 
-def _fetch_user_row(db, username: str) -> Optional[dict]:
+def _fetch_user_row(db, username: str, *, public_only: bool = False) -> Optional[dict]:
+    fields = PUBLIC_USER_SELECT_FIELDS if public_only else OWNER_USER_SELECT_FIELDS
     db.cursor.execute(
         f"""
-        SELECT {USER_SELECT_FIELDS}
+        SELECT {fields}
         FROM users WHERE username = %s
         """,
         (username,),
@@ -243,7 +248,14 @@ def _fetch_user_row(db, username: str) -> Optional[dict]:
 
 def get_user_by_username(username: str, viewer_id: Optional[int] = None) -> dict:
     with PgDatabase() as db:
-        user = _fetch_user_row(db, username)
+        db.cursor.execute("SELECT id FROM users WHERE username = %s", (username,))
+        user_ref = db.cursor.fetchone()
+
+        if not user_ref:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        public_only = viewer_id is None or viewer_id != user_ref["id"]
+        user = _fetch_user_row(db, username, public_only=public_only)
 
         if not user:
             raise HTTPException(status_code=404, detail="User not found")

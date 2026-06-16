@@ -60,7 +60,21 @@ def signup(payload: SignupData, background_tasks: BackgroundTasks) -> dict:
     data = payload.model_dump()
     data["password"] = hash_password(data["password"])
     data["gender"] = data["gender"].value
-    DatabaseHelper.create_row("users", data)
+
+    with PgDatabase() as db:
+        db.cursor.execute(
+            """
+            INSERT INTO users (
+                first_name, last_name, email, password, username, gender, birthdate
+            )
+            VALUES (
+                %(first_name)s, %(last_name)s, %(email)s, %(password)s,
+                %(username)s, %(gender)s, %(birthdate)s
+            )
+            """,
+            data,
+        )
+        db.connection.commit()
 
     email_service.queue_verification_email(data["email"], background_tasks)
 
@@ -101,6 +115,7 @@ def signin(payload: SignInData) -> tuple[dict, dict[str, str]]:
         expires_delta=timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS),
     )
 
+    user.pop("password", None)
     return user, {"access_token": access_token, "refresh_token": refresh_token}
 
 
@@ -135,13 +150,15 @@ def verify_email(token: str) -> str:
         if token_decoded.get("type") != "email_verification":
             raise HTTPException(status_code=400, detail="Invalid token type")
         email = token_decoded.get("data").get("email")
-        if not DatabaseHelper.update_database_value(
-            table_name="users",
-            condition_field="email",
-            condition_value=email,
-            new_value=True,
-            field_to_update="is_verified",
-        ):
+        with PgDatabase() as db:
+            db.cursor.execute(
+                "UPDATE users SET is_verified = TRUE WHERE email = %s",
+                (email,),
+            )
+            updated = db.cursor.rowcount > 0
+            db.connection.commit()
+
+        if not updated:
             raise HTTPException(status_code=400, detail="Email invalid")
         return f"{FRONT_BASE_URL}?verified=1"
     except jose.jwt.ExpiredSignatureError:
@@ -154,13 +171,11 @@ def forgot_password(
     payload: PasswordResetRequest, background_tasks: BackgroundTasks
 ) -> dict:
     email = payload.email
-    if not DatabaseHelper.field_exists("users", "email", email):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Email not found"
-        )
-
-    email_service.queue_password_reset_email(email, background_tasks)
-    return {"message": "Password reset link sent"}
+    if DatabaseHelper.field_exists("users", "email", email):
+        email_service.queue_password_reset_email(email, background_tasks)
+    return {
+        "message": "If an account exists for this email, a password reset link has been sent."
+    }
 
 
 def validate_reset_token(token: str) -> dict:

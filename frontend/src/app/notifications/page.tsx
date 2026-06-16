@@ -1,25 +1,32 @@
 "use client";
 
-import Link from "next/link";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AuthenticatedLayout } from "@/components/common/AuthenticatedLayout";
-import { QueryErrorState } from "@/components/common/QueryErrorState";
 import { notificationsApi } from "@/api/client";
 import type { NotificationResponse } from "@/api/model";
+import { AuthenticatedLayout } from "@/components/common/AuthenticatedLayout";
+import { QueryErrorState } from "@/components/common/QueryErrorState";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   getNotificationHref,
   getNotificationListLabel,
 } from "@/lib/notificationPresentation";
+import { REALTIME_POLL_INTERVAL_MS } from "@/lib/realtimeConfig";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
 
-  const { data: notifications = [], isLoading, isError, refetch } = useQuery({
+  const {
+    data: notifications = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: ["notifications"],
     queryFn: async () =>
       (await notificationsApi.listNotificationsApiNotificationsGet()) as NotificationResponse[],
+    refetchInterval: REALTIME_POLL_INTERVAL_MS,
   });
 
   const markAllRead = useMutation({
@@ -60,45 +67,50 @@ export default function NotificationsPage() {
           )}
 
           {!isLoading && !isError && notifications.length === 0 && (
-            <p className="text-sm text-muted-foreground">No notifications yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No notifications yet.
+            </p>
           )}
 
           {!isLoading &&
             !isError &&
             notifications.map((notification) => {
-            const preview =
-              notification.type === "message" &&
-              typeof notification.payload?.preview === "string"
-                ? notification.payload.preview
-                : null;
+              const preview =
+                notification.type === "message" &&
+                typeof notification.payload?.preview === "string"
+                  ? notification.payload.preview
+                  : null;
 
-            return (
-            <div
-              key={notification.id}
-              className={`rounded-lg border p-4 ${
-                notification.read_at ? "border-border/40" : "border-primary/40"
-              }`}
-            >
-              <p className="text-sm">
-                <Link
-                  href={getNotificationHref(notification)}
-                  className="font-medium hover:underline"
+              return (
+                <div
+                  key={notification.id}
+                  className={`rounded-lg border p-4 ${
+                    notification.read_at
+                      ? "border-border/40"
+                      : "border-primary/40"
+                  }`}
                 >
-                  {notification.actor.first_name} {notification.actor.last_name}
-                </Link>{" "}
-                {getNotificationListLabel(notification)}
-              </p>
-              {preview && (
-                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
-                  {preview}
-                </p>
-              )}
-              <p className="mt-1 text-xs text-muted-foreground">
-                {new Date(notification.created_at).toLocaleString()}
-              </p>
-            </div>
-            );
-          })}
+                  <p className="text-sm">
+                    <Link
+                      href={getNotificationHref(notification)}
+                      className="font-medium hover:underline"
+                    >
+                      {notification.actor.first_name}{" "}
+                      {notification.actor.last_name}
+                    </Link>{" "}
+                    {getNotificationListLabel(notification)}
+                  </p>
+                  {preview && (
+                    <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                      {preview}
+                    </p>
+                  )}
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {new Date(notification.created_at).toLocaleString()}
+                  </p>
+                </div>
+              );
+            })}
         </div>
       </div>
     </AuthenticatedLayout>

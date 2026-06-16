@@ -10,7 +10,9 @@ import { useParams } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
 import { CalendarHeart, Phone } from "lucide-react";
 import { ScheduleDateDialog } from "@/components/dates/ScheduleDateDialog";
+import { chatMessageSchema } from "@/forms.validators";
 import { useAudioCall } from "@/hooks/chat/useAudioCall";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ChatThreadPage() {
   const params = useParams();
@@ -22,6 +24,7 @@ export default function ChatThreadPage() {
   const { messages, isLoading, isSending, isConnected, error, send } =
     useChatThread(username);
   const { startCall, status: callStatus } = useAudioCall();
+  const { toast } = useToast();
   const callActive = callStatus !== "idle";
 
   useEffect(() => {
@@ -31,11 +34,20 @@ export default function ChatThreadPage() {
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const body = draft.trim();
-    if (!body || isSending) return;
+    const parsed = chatMessageSchema.safeParse(draft);
+    if (!parsed.success || isSending) {
+      if (!parsed.success) {
+        toast({
+          title: "Invalid message",
+          description: parsed.error.issues[0]?.message ?? "Message is invalid.",
+          variant: "error",
+        });
+      }
+      return;
+    }
 
     try {
-      await send(body);
+      await send(parsed.data);
       setDraft("");
       inputRef.current?.focus();
     } catch {

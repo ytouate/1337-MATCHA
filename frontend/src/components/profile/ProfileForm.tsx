@@ -46,17 +46,28 @@ import { useGetMe } from "@/hooks/auth/useGetMe";
 import { useToast } from "@/hooks/use-toast";
 import { saveGalleryImages, profileImagesToGalleryItems, getProfilePictureIndex } from "@/hooks/profile/useGallerySave";
 
-const formSchema = z.object({
+const baseFormSchema = z.object({
   bio: z.string().min(10, "Bio must be at least 10 characters").max(255),
   gender: z.enum(["Male", "Female"]),
   sexual_preference: z.enum(["Male", "Female"]),
   interests: z.array(z.string()).min(1, "Select at least 1 interest").max(5),
   latitude: z.number().nullable(),
   longitude: z.number().nullable(),
-  location_label: z.string().nullable().optional(),
+  location_label: z.string().max(128).nullable().optional(),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+const createFormSchema = (mode: "complete" | "edit") =>
+  baseFormSchema.refine(
+    (data) =>
+      mode !== "complete" ||
+      (data.latitude !== null && data.longitude !== null),
+    {
+      message: "Location is required for matching",
+      path: ["latitude"],
+    },
+  );
+
+type FormValues = z.infer<typeof baseFormSchema>;
 
 interface ProfileFormProps {
   mode?: "complete" | "edit";
@@ -73,6 +84,8 @@ export function ProfileForm({ mode = "complete" }: ProfileFormProps) {
   const { data: meProfile } = useGetMe();
 
   const profile = (meProfile ?? user) as UserProfileResponse | null;
+
+  const formSchema = useMemo(() => createFormSchema(mode), [mode]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),

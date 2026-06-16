@@ -37,12 +37,15 @@ export function ImageUpload({
     [images.length, onUpload]
   );
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, fileRejections } = useDropzone({
     onDrop,
     accept: { "image/*": [".jpg", ".jpeg", ".png", ".gif"] },
     maxFiles: 5 - images.length,
+    maxSize: 5 * 1024 * 1024,
     disabled: images.length >= 5,
   });
+
+  const rejectionMessage = fileRejections[0]?.errors[0]?.message;
 
   return (
     <div className="space-y-4">
@@ -61,9 +64,12 @@ export function ImageUpload({
           {isDragActive ? "Drop photos here" : "Add photos"}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Drag and drop or click to browse · up to 5
+          Drag and drop or click to browse · up to 5 · max 5 MB each
         </p>
       </div>
+      {rejectionMessage && (
+        <p className="text-sm text-destructive">{rejectionMessage}</p>
+      )}
 
       {images.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">

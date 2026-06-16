@@ -21,7 +21,6 @@ class TestSignup:
 
         with (
             _patch_pg(mock_pg_cursor),
-            patch("src.services.auth_service.DatabaseHelper.create_row") as create_row,
             patch(
                 "src.services.auth_service.email_service.queue_verification_email"
             ) as queue_email,
@@ -30,7 +29,12 @@ class TestSignup:
 
         assert response.status_code == 200
         assert response.json() == {"message": "User successfully registered"}
-        create_row.assert_called_once()
+        insert_calls = [
+            call
+            for call in cursor.execute.call_args_list
+            if call.args and "INSERT INTO users" in call.args[0]
+        ]
+        assert len(insert_calls) == 1
         queue_email.assert_called_once()
 
     def test_signup_resends_verification_for_unverified_email(
@@ -80,15 +84,14 @@ class TestSignup:
         cursor.fetchone.side_effect = [None, None]
         stored = {}
 
-        def capture_row(table, data):
-            stored.update(data)
+        def capture_execute(query, params=None):
+            if "INSERT INTO users" in query:
+                stored.update(params)
+
+        cursor.execute.side_effect = capture_execute
 
         with (
             _patch_pg(mock_pg_cursor),
-            patch(
-                "src.services.auth_service.DatabaseHelper.create_row",
-                side_effect=capture_row,
-            ),
             patch("src.services.auth_service.email_service.queue_verification_email"),
         ):
             client.post("/api/auth/signup", json=valid_signup_payload)
@@ -112,7 +115,6 @@ class TestSignup:
 
         with (
             _patch_pg(mock_pg_cursor),
-            patch("src.services.auth_service.DatabaseHelper.create_row"),
             patch(
                 "src.services.auth_service.email_service.queue_verification_email"
             ) as queue_email,
@@ -149,17 +151,16 @@ class TestPasswordPolicy:
 
 
 class TestEmailVerification:
-    def test_email_verification_marks_user_verified(self, client):
+    def test_email_verification_marks_user_verified(self, client, mock_pg_cursor):
+        cursor, _, _ = mock_pg_cursor
+        cursor.rowcount = 1
         token = generate_jwt_token(
             type="email_verification",
             data={"email": "test@example.com"},
             expires_delta=timedelta(hours=24),
         )
 
-        with patch(
-            "src.services.auth_service.DatabaseHelper.update_database_value",
-            return_value=True,
-        ) as update_value:
+        with _patch_pg(mock_pg_cursor) as _:
             response = client.get(
                 f"/api/auth/email-verification?token={token}",
                 follow_redirects=False,
@@ -167,7 +168,12 @@ class TestEmailVerification:
 
         assert response.status_code == 301
         assert response.headers["location"] == "http://localhost:9998?verified=1"
-        update_value.assert_called_once()
+        update_calls = [
+            call
+            for call in cursor.execute.call_args_list
+            if call.args and "UPDATE users SET is_verified" in call.args[0]
+        ]
+        assert len(update_calls) == 1
 
 
 class TestSignin:
@@ -183,6 +189,7 @@ class TestSignin:
 
         assert response.status_code == 200
         assert response.json()["user"]["username"] == "testuser"
+        assert "password" not in response.json()["user"]
         set_cookie_headers = response.headers.get_list("set-cookie")
         assert any("access_token=" in header for header in set_cookie_headers)
 
@@ -248,10 +255,10 @@ class TestPasswordReset:
             )
 
         assert response.status_code == 200
-        assert response.json()["message"] == "Password reset link sent"
+        assert "If an account exists" in response.json()["message"]
         queue_reset.assert_called_once_with("test@example.com", ANY)
 
-    def test_forgot_password_returns_404_for_unknown_email(self, client):
+    def test_forgot_password_same_response_for_unknown_email(self, client):
         with patch(
             "src.services.auth_service.DatabaseHelper.field_exists",
             return_value=False,
@@ -261,7 +268,8 @@ class TestPasswordReset:
                 json={"email": "missing@example.com"},
             )
 
-        assert response.status_code == 404
+        assert response.status_code == 200
+        assert "If an account exists" in response.json()["message"]
 
     def test_reset_password_with_valid_token(self, client, mock_pg_cursor):
         _, connection, _ = mock_pg_cursor

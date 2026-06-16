@@ -74,3 +74,33 @@ export const resetPasswordSchema = z
     message: "Passwords don't match",
     path: ["confirmPassword"],
   });
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email("Invalid email address").max(255),
+});
+
+export const identitySchema = z.object({
+  first_name: z
+    .string()
+    .min(3, "First name must be at least 3 characters")
+    .max(16, "First name must not exceed 16 characters"),
+  last_name: z
+    .string()
+    .min(3, "Last name must be at least 3 characters")
+    .max(16, "Last name must not exceed 16 characters"),
+  email: z.string().trim().email("Enter a valid email").max(255),
+});
+
+export const geocodeQuerySchema = z
+  .string()
+  .trim()
+  .min(1, "Enter a city or neighborhood")
+  .max(128, "Location query must not exceed 128 characters");
+
+export const chatMessageSchema = z
+  .string()
+  .trim()
+  .min(1, "Message cannot be empty")
+  .max(2000, "Message must not exceed 2000 characters");
+
+export const MAX_UPLOAD_FILE_SIZE = 5 * 1024 * 1024;

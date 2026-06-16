@@ -5,12 +5,38 @@ from src.schemas.user import GeocodeRequest, GeocodeResponse
 
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
+_LABEL_KEYS = (
+    "city",
+    "town",
+    "village",
+    "suburb",
+    "neighbourhood",
+    "county",
+    "state",
+)
+
+
+def _build_location_label(result: dict, fallback: str) -> str:
+    address = result.get("address") or {}
+    for key in _LABEL_KEYS:
+        value = address.get(key)
+        if value:
+            return str(value)[:128]
+
+    display_name = result.get("display_name", fallback)
+    parts = [part.strip() for part in display_name.split(",") if part.strip()]
+    if len(parts) >= 2:
+        return parts[-2][:128]
+
+    return fallback[:128]
+
 
 async def geocode_location(payload: GeocodeRequest) -> GeocodeResponse:
     params = {
         "q": payload.query,
         "format": "json",
         "limit": 1,
+        "addressdetails": 1,
     }
     headers = {"User-Agent": "Matcha/1.0 (dating-app)"}
 
@@ -36,10 +62,10 @@ async def geocode_location(payload: GeocodeRequest) -> GeocodeResponse:
         )
 
     result = results[0]
-    label = result.get("display_name", payload.query)
+    label = _build_location_label(result, payload.query)
 
     return GeocodeResponse(
         latitude=float(result["lat"]),
         longitude=float(result["lon"]),
-        label=label[:128],
+        label=label,
     )

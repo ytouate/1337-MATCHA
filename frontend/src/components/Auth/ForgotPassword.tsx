@@ -9,6 +9,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useForgotPassword } from "@/hooks/auth/useForgotPassword";
+import { forgotPasswordSchema } from "@/forms.validators";
 import { useState } from "react";
 
 interface Props {
@@ -18,12 +19,20 @@ interface Props {
 
 export const ForgotPassword = ({ isOpen, onOpenChange }: Props) => {
   const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const { mutate: sendResetEmail, isPending } = useForgotPassword();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const parsed = forgotPasswordSchema.safeParse({ email });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Invalid email address");
+      return;
+    }
+
+    setError(null);
     sendResetEmail(
-      { email },
+      { email: parsed.data.email },
       {
         onSuccess: () => {
           onOpenChange(false);
@@ -51,9 +60,13 @@ export const ForgotPassword = ({ isOpen, onOpenChange }: Props) => {
                 type="email"
                 placeholder="Enter your email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (error) setError(null);
+                }}
                 required
               />
+              {error && <p className="text-sm text-destructive">{error}</p>}
             </div>
             <div className="flex justify-end space-x-2">
               <Button

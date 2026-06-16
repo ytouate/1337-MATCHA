@@ -79,10 +79,6 @@ def _serialize_date(row: dict, viewer_id: int) -> dict:
         "status": row["status"],
         "scheduled_at": _serialize_dt(row["scheduled_at"]),
         "location_label": row.get("location_label"),
-        "latitude": float(row["latitude"]) if row.get("latitude") is not None else None,
-        "longitude": (
-            float(row["longitude"]) if row.get("longitude") is not None else None
-        ),
         "note": row.get("note"),
         "is_mine": is_proposer,
         "peer": _serialize_peer(row, peer_prefix),
