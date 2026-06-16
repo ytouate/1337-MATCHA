@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/auth";
+import { SHELL_MAIN_HEIGHT } from "@/lib/layoutConfig";
 
 interface AuthenticatedLayoutProps {
   children: React.ReactNode;
@@ -24,7 +25,10 @@ export const AuthenticatedLayout = ({ children }: AuthenticatedLayoutProps) => {
 
   if (isLoading) {
     return (
-      <div className="flex h-full min-h-[calc(100dvh-4rem)] items-center justify-center">
+      <div
+        className="flex h-full items-center justify-center"
+        style={{ minHeight: SHELL_MAIN_HEIGHT }}
+      >
         <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-primary"></div>
       </div>
     );

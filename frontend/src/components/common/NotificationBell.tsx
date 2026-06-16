@@ -14,15 +14,14 @@ import {
   getNotificationHref,
   getNotificationListLabel,
 } from "@/lib/notificationPresentation";
-import { REALTIME_POLL_INTERVAL_MS } from "@/lib/realtimeConfig";
-import { useAuthStore } from "@/store/auth";
+import { useRealtimePollInterval } from "@/hooks/useRealtimePollInterval";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell } from "lucide-react";
 import Link from "next/link";
 
 export function NotificationBell() {
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuthStore();
+  const pollInterval = useRealtimePollInterval();
 
   const { data: unreadCountData } = useQuery({
     queryKey: ["notifications", "unread-count"],
@@ -30,7 +29,7 @@ export function NotificationBell() {
       (await notificationsApi.getUnreadCountApiNotificationsUnreadCountGet()) as {
         count: number;
       },
-    refetchInterval: isAuthenticated ? REALTIME_POLL_INTERVAL_MS : false,
+    refetchInterval: pollInterval,
   });
 
   const cachedNotifications =

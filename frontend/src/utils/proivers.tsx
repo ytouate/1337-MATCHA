@@ -46,12 +46,7 @@ export default function Providers({ children }: { children: ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider
-        attribute="class"
-        defaultTheme="system"
-        enableSystem
-        disableTransitionOnChange
-      >
+      <ThemeProvider defaultTheme="system">
         <ErrorBoundary>
           <ClientErrorHandlers />
           <AuthProvider>

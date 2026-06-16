@@ -42,8 +42,8 @@ vi.mock("@/hooks/auth/useSignout", () => ({
   useSignout: () => ({ mutate: vi.fn() }),
 }));
 
-vi.mock("next-themes", () => ({
-  useTheme: () => ({ theme: "light", setTheme: vi.fn() }),
+vi.mock("@/components/theme-provider", () => ({
+  useTheme: () => ({ theme: "light", setTheme: vi.fn(), resolvedTheme: "light", systemTheme: "light" }),
 }));
 
 vi.mock("@/components/common/NotificationBell", () => ({
@@ -64,14 +64,17 @@ vi.mock("@/components/auth/EmailConfirmationModal", () => ({
 }));
 
 describe("AppShell", () => {
-  it("renders navbar with logout on every page", () => {
+  it("renders semantic header, main, footer, and navbar controls", () => {
     render(
       <AppShell>
         <div>Page content</div>
       </AppShell>,
     );
 
-    expect(screen.getByText("MATCHA")).toBeInTheDocument();
+    expect(screen.getByRole("banner")).toBeInTheDocument();
+    expect(screen.getByRole("main")).toBeInTheDocument();
+    expect(screen.getByRole("contentinfo")).toBeInTheDocument();
+    expect(screen.getByRole("banner")).toHaveTextContent("MATCHA");
     expect(screen.getByRole("button", { name: "Account menu" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open menu" })).toBeInTheDocument();
     expect(screen.getByText("Page content")).toBeInTheDocument();

@@ -8,6 +8,7 @@ import {
   REALTIME_MAX_DELAY_MS,
   getReconnectDelayMs,
 } from "@/lib/realtimeConfig";
+import { getWsApiUrl } from "@/lib/wsConfig";
 import { useAuthStore } from "@/store/auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
@@ -81,13 +82,7 @@ function waitForAuth(): Promise<void> {
 }
 
 function getWsUrl() {
-  if (typeof window !== "undefined") {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    return `${protocol}//${window.location.host}/api/ws`;
-  }
-
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:7001";
-  return apiUrl.replace(/^http/, "ws") + "/api/ws";
+  return getWsApiUrl();
 }
 
 export function ChatSocketProvider({ children }: { children: ReactNode }) {
@@ -285,6 +280,7 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
 
   const syncNotifications = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    queryClient.invalidateQueries({ queryKey: ["notifications", "unread-count"] });
   }, [queryClient]);
 
   const scheduleReconnect = useCallback(() => {

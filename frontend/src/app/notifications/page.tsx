@@ -10,12 +10,13 @@ import {
   getNotificationHref,
   getNotificationListLabel,
 } from "@/lib/notificationPresentation";
-import { REALTIME_POLL_INTERVAL_MS } from "@/lib/realtimeConfig";
+import { useRealtimePollInterval } from "@/hooks/useRealtimePollInterval";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 
 export default function NotificationsPage() {
   const queryClient = useQueryClient();
+  const pollInterval = useRealtimePollInterval();
 
   const {
     data: notifications = [],
@@ -26,7 +27,7 @@ export default function NotificationsPage() {
     queryKey: ["notifications"],
     queryFn: async () =>
       (await notificationsApi.listNotificationsApiNotificationsGet()) as NotificationResponse[],
-    refetchInterval: REALTIME_POLL_INTERVAL_MS,
+    refetchInterval: pollInterval,
   });
 
   const markAllRead = useMutation({

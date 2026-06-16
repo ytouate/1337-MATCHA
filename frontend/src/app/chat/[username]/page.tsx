@@ -11,6 +11,7 @@ import { FormEvent, useEffect, useRef, useState } from "react";
 import { CalendarHeart, Phone } from "lucide-react";
 import { ScheduleDateDialog } from "@/components/dates/ScheduleDateDialog";
 import { chatMessageSchema } from "@/forms.validators";
+import { SHELL_MAIN_HEIGHT } from "@/lib/layoutConfig";
 import { useAudioCall } from "@/hooks/chat/useAudioCall";
 import { useToast } from "@/hooks/use-toast";
 
@@ -57,7 +58,10 @@ export default function ChatThreadPage() {
 
   return (
     <AuthenticatedLayout>
-      <div className="mx-auto flex h-[calc(100dvh-5rem)] max-w-2xl flex-col px-4 py-6 sm:px-6">
+      <div
+        className="mx-auto flex max-w-2xl flex-col px-4 py-6 sm:px-6"
+        style={{ height: SHELL_MAIN_HEIGHT }}
+      >
         <div className="mb-4">
           <Link href="/connections" className="text-sm text-primary hover:underline">
             Back to connections

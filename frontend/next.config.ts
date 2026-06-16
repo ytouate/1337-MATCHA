@@ -1,7 +1,13 @@
 import type { NextConfig } from "next";
+import { buildConnectSrcDirective } from "./src/lib/connectSrc";
 
 const API_BASE = (
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:7001"
+).replace(/\/$/, "");
+
+const APP_BASE = (
+  process.env.NEXT_PUBLIC_APP_URL ||
+  `http://localhost:${process.env.PORT || "9998"}`
 ).replace(/\/$/, "");
 
 let imageHostname = "localhost";
@@ -15,7 +21,15 @@ try {
   // keep defaults
 }
 
-const wsBase = API_BASE.replace(/^http/, "ws");
+const isProduction = process.env.NODE_ENV === "production";
+
+const connectSrc = buildConnectSrcDirective({
+  apiBase: API_BASE,
+  appBase: APP_BASE,
+  includeLocalhostVariants: !isProduction,
+  devMode: !isProduction,
+});
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -31,7 +45,7 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       `img-src 'self' data: blob: ${API_BASE} https://*.tile.openstreetmap.org`,
-      `connect-src 'self' ${API_BASE} ${wsBase}`,
+      connectSrc,
       "font-src 'self'",
       "frame-ancestors 'none'",
     ].join("; "),

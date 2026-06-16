@@ -3,6 +3,8 @@
 import { Suspense, useEffect, type ReactNode } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Navbar } from "@/components/leading/Navbar";
+import { SiteFooter } from "@/components/layout/SiteFooter";
+import { SHELL_HEADER_OFFSET } from "@/lib/layoutConfig";
 import { Signin } from "@/components/auth/Signin";
 import { Signup } from "@/components/auth/Signup";
 import { ForgotPassword } from "@/components/auth/ForgotPassword";
@@ -88,11 +90,15 @@ function AuthModals() {
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="h-dvh">
+    <div className="flex h-dvh flex-col">
       <Navbar />
-      <main className="h-full overflow-y-auto pt-[calc(4rem+env(safe-area-inset-top))]">
+      <main
+        className="flex-1 overflow-y-auto"
+        style={{ paddingTop: SHELL_HEADER_OFFSET }}
+      >
         {children}
       </main>
+      <SiteFooter />
       <Suspense fallback={null}>
         <VerifiedRedirectHandler />
       </Suspense>

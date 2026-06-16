@@ -1,6 +1,7 @@
 import { Fira_Code, Outfit } from "next/font/google";
 import Providers from "@/utils/proivers";
 import { appViewport } from "@/lib/viewport";
+import { THEME_INIT_SCRIPT } from "@/lib/themeScript";
 import "../globals.css";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -23,6 +24,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+          suppressHydrationWarning
+        />
+      </head>
       <body
         className={`${outfit.variable} ${firaCode.variable} min-h-screen bg-background font-sans antialiased`}
         suppressHydrationWarning

@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, Moon, Sun } from "lucide-react";
-import { useTheme } from "next-themes";
+import { Menu } from "lucide-react";
 import { NotificationBell } from "@/components/common/NotificationBell";
+import {
+  ThemeToggleButton,
+  ThemeToggleMenuItem,
+} from "@/components/common/ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -157,7 +160,6 @@ export function AppNavbar() {
   const pathname = usePathname();
   const { isAuthenticated, user } = useAuthStore();
   const { mutate: signout } = useSignout();
-  const { setTheme, theme } = useTheme();
   const { openSignin } = useAuthModal();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -252,18 +254,7 @@ export function AppNavbar() {
                     );
                   })}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() =>
-                      setTheme(theme === "dark" ? "light" : "dark")
-                    }
-                  >
-                    {theme === "dark" ? (
-                      <Sun className="mr-2 h-4 w-4" />
-                    ) : (
-                      <Moon className="mr-2 h-4 w-4" />
-                    )}
-                    Toggle theme
-                  </DropdownMenuItem>
+                  <ThemeToggleMenuItem />
                   <DropdownMenuItem onClick={() => signout()}>
                     Logout
                   </DropdownMenuItem>
@@ -274,15 +265,7 @@ export function AppNavbar() {
 
           {!isAuthenticated && (
             <>
-              <Button
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                variant="ghost"
-                size="icon"
-                className="min-h-11 min-w-11"
-                aria-label="Toggle theme"
-              >
-                {theme === "light" ? <Moon /> : <Sun />}
-              </Button>
+              <ThemeToggleButton className="min-h-11 min-w-11" />
               <Button onClick={openSignin} className="rounded-full">
                 Login
               </Button>
