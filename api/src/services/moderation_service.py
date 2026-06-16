@@ -1,6 +1,15 @@
 from fastapi import HTTPException, status
 
 from src.db.database import PgDatabase
+from src.services.user_service import _image_public_url
+
+
+def _serialize_dt(value):
+    from datetime import date, datetime
+
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    return value
 
 
 def is_blocked(db, user_a: int, user_b: int) -> bool:
@@ -56,6 +65,39 @@ def unblock_user(blocker_id: int, username: str) -> dict:
             (blocker_id, target["id"]),
         )
         return {"message": "User unblocked"}
+
+
+def get_blocked_users(blocker_id: int) -> list[dict]:
+    with PgDatabase() as db:
+        db.cursor.execute(
+            """
+            SELECT u.username, u.first_name, u.last_name,
+                   img.url AS profile_picture, ub.created_at AS blocked_at
+            FROM user_blocks ub
+            JOIN users u ON u.id = ub.blocked_id
+            LEFT JOIN images img
+              ON img.user_id = u.id AND img.is_profile_picture = TRUE
+            WHERE ub.blocker_id = %s
+            ORDER BY ub.created_at DESC
+            """,
+            (blocker_id,),
+        )
+        rows = db.cursor.fetchall()
+
+    return [
+        {
+            "username": row["username"],
+            "first_name": row["first_name"],
+            "last_name": row["last_name"],
+            "profile_picture": (
+                _image_public_url(row["profile_picture"])
+                if row.get("profile_picture")
+                else None
+            ),
+            "blocked_at": _serialize_dt(row["blocked_at"]),
+        }
+        for row in rows
+    ]
 
 
 def report_user(reporter_id: int, username: str, reason: str) -> dict:

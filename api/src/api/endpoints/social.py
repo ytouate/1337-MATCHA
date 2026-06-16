@@ -1,7 +1,12 @@
 from fastapi import APIRouter, Depends
 
 from src.core.deps import get_current_user
-from src.schemas.user import ChatMessageCreate, ChatMessageResponse, ReportRequest
+from src.schemas.user import (
+    BlockedUsersListResponse,
+    ChatMessageCreate,
+    ChatMessageResponse,
+    ReportRequest,
+)
 from src.services import chat_service, moderation_service, social_service
 
 router = APIRouter(
@@ -13,6 +18,13 @@ router = APIRouter(
 @router.get("/users/me/connections")
 async def get_my_connections(current_user=Depends(get_current_user)):
     return {"connections": social_service.get_connections(current_user["user_id"])}
+
+
+@router.get("/users/me/blocked", response_model=BlockedUsersListResponse)
+async def get_my_blocked_users(current_user=Depends(get_current_user)):
+    return {
+        "blocked": moderation_service.get_blocked_users(current_user["user_id"])
+    }
 
 
 @router.post("/users/{username}/block")

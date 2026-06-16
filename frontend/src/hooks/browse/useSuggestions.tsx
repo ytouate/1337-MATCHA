@@ -10,6 +10,11 @@ import type { AxiosError } from "axios";
 import { useMemo } from "react";
 
 export const SEARCH_PAGE_SIZE = 20;
+export const MAP_PAGE_SIZE = 100;
+
+function getPageSize(filters: BrowseFiltersState): number {
+  return filters.limit ?? SEARCH_PAGE_SIZE;
+}
 
 export interface BrowseFiltersState {
   sort_by?: GetSuggestionsApiUsersSuggestionsGetParams["sort_by"];
@@ -69,7 +74,7 @@ function toApiParams(
     min_fame: sanitized.min_fame ?? undefined,
     max_fame: sanitized.max_fame ?? undefined,
     tags: sanitized.tags?.length ? sanitized.tags.join(",") : undefined,
-    limit: SEARCH_PAGE_SIZE,
+    limit: getPageSize(sanitized),
     offset,
   };
 }
@@ -100,7 +105,8 @@ export function useSuggestions(filters: BrowseFiltersState) {
       )) as SuggestionListResponse,
     initialPageParam: 0,
     getNextPageParam: (lastPage, _pages, lastPageParam) => {
-      const nextOffset = lastPageParam + SEARCH_PAGE_SIZE;
+      const pageSize = lastPage.limit ?? getPageSize(filters);
+      const nextOffset = lastPageParam + pageSize;
       return nextOffset < lastPage.total ? nextOffset : undefined;
     },
     retry: shouldRetrySuggestions,

@@ -94,6 +94,18 @@ class SocialUserSummary(BaseModel):
     last_seen_at: Optional[datetime] = None
 
 
+class BlockedUserSummary(BaseModel):
+    username: str
+    first_name: str
+    last_name: str
+    profile_picture: Optional[str] = None
+    blocked_at: datetime
+
+
+class BlockedUsersListResponse(BaseModel):
+    blocked: list[BlockedUserSummary]
+
+
 class ReportRequest(BaseModel):
     reason: str = Field(..., min_length=5, max_length=512)
 

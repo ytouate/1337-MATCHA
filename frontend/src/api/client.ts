@@ -1,4 +1,5 @@
 import { getAuthentication } from "./generated/authentication/authentication";
+import { getDates } from "./generated/dates/dates";
 import { getFileUpload } from "./generated/file-upload/file-upload";
 import { getInterests } from "./generated/interests/interests";
 import { getLocation } from "./generated/location/location";
@@ -10,11 +11,13 @@ export const authApi = getAuthentication();
 export const usersApi = getUserManagement();
 export const suggestionsApi = usersApi;
 export const socialApi = getSocial();
+export const datesApi = getDates();
 export const notificationsApi = getNotifications();
 export const uploadApi = getFileUpload();
 export const interestsApi = getInterests();
 export const locationApi = getLocation();
 
+export * from "./model";
 export { AXIOS_INSTANCE } from "./mutator/custom-instance";
 export type { ErrorType } from "./mutator/custom-instance";
-export * from "./model";
+

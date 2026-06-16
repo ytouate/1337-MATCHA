@@ -7,6 +7,7 @@
  */
 import type {
   EmailVerificationApiAuthEmailVerificationGetParams,
+  Oauth42CallbackApiAuthOauth42CallbackGetParams,
   PasswordResetConfirm,
   PasswordResetRequest,
   SignInData,
@@ -119,7 +120,30 @@ const signoutApiAuthSignoutPost = (
     },
       options);
     }
-  return {signupApiAuthSignupPost,signinApiAuthSigninPost,emailVerificationApiAuthEmailVerificationGet,forgotPasswordApiAuthForgotPasswordPost,validateResetTokenApiAuthValidateResetTokenTokenGet,resetPasswordApiAuthResetPasswordTokenPost,getMeApiAuthMeGet,signoutApiAuthSignoutPost}};
+  /**
+ * @summary Oauth 42 Start
+ */
+const oauth42StartApiAuthOauth42Get = (
+
+ options?: SecondParameter<typeof customInstance<unknown>>,) => {
+      return customInstance<unknown>(
+      {url: `/api/auth/oauth/42`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * @summary Oauth 42 Callback
+ */
+const oauth42CallbackApiAuthOauth42CallbackGet = (
+    params?: Oauth42CallbackApiAuthOauth42CallbackGetParams,
+ options?: SecondParameter<typeof customInstance<unknown>>,) => {
+      return customInstance<unknown>(
+      {url: `/api/auth/oauth/42/callback`, method: 'GET',
+        params
+    },
+      options);
+    }
+  return {signupApiAuthSignupPost,signinApiAuthSigninPost,emailVerificationApiAuthEmailVerificationGet,forgotPasswordApiAuthForgotPasswordPost,validateResetTokenApiAuthValidateResetTokenTokenGet,resetPasswordApiAuthResetPasswordTokenPost,getMeApiAuthMeGet,signoutApiAuthSignoutPost,oauth42StartApiAuthOauth42Get,oauth42CallbackApiAuthOauth42CallbackGet}};
 export type SignupApiAuthSignupPostResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuthentication>['signupApiAuthSignupPost']>>>
 export type SigninApiAuthSigninPostResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuthentication>['signinApiAuthSigninPost']>>>
 export type EmailVerificationApiAuthEmailVerificationGetResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuthentication>['emailVerificationApiAuthEmailVerificationGet']>>>
@@ -128,3 +152,5 @@ export type ValidateResetTokenApiAuthValidateResetTokenTokenGetResult = NonNulla
 export type ResetPasswordApiAuthResetPasswordTokenPostResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuthentication>['resetPasswordApiAuthResetPasswordTokenPost']>>>
 export type GetMeApiAuthMeGetResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuthentication>['getMeApiAuthMeGet']>>>
 export type SignoutApiAuthSignoutPostResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuthentication>['signoutApiAuthSignoutPost']>>>
+export type Oauth42StartApiAuthOauth42GetResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuthentication>['oauth42StartApiAuthOauth42Get']>>>
+export type Oauth42CallbackApiAuthOauth42CallbackGetResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuthentication>['oauth42CallbackApiAuthOauth42CallbackGet']>>>

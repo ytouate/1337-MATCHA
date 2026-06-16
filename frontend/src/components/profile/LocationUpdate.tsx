@@ -6,7 +6,12 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useGeolocation } from "@/hooks/useGeolocation";
 import { locationApi } from "@/api/client";
+import {
+  formatAccuracyMeters,
+  isLowGpsAccuracy,
+} from "@/lib/geolocation";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -27,45 +32,38 @@ export const LocationUpdate = ({
   const { toast } = useToast();
   const [manualQuery, setManualQuery] = useState("");
   const [isGeocoding, setIsGeocoding] = useState(false);
-  const [isRequestingGps, setIsRequestingGps] = useState(false);
+  const {
+    accuracy,
+    loading: isRequestingGps,
+    requestPreciseLocation,
+    updateLocation,
+  } = useGeolocation({ latitude, longitude });
   const hasLocation = latitude !== null && longitude !== null;
 
-  const handleGetLocation = () => {
-    if (!navigator.geolocation) {
+  const handleGetLocation = async () => {
+    const position = await requestPreciseLocation();
+    if (!position) {
       toast({
-        title: "GPS unavailable",
-        description: "Enter your city or neighborhood below.",
-        variant: "error",
+        title: "Location access denied",
+        description: "Enter your city or neighborhood manually below.",
+        variant: "default",
       });
       return;
     }
 
-    setIsRequestingGps(true);
+    form.setValue("latitude", position.latitude);
+    form.setValue("longitude", position.longitude);
+    form.setValue("location_label", null);
+    onGpsUpdate?.(position.latitude, position.longitude);
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        form.setValue("latitude", lat);
-        form.setValue("longitude", lng);
-        form.setValue("location_label", null);
-        onGpsUpdate?.(lat, lng);
-        setIsRequestingGps(false);
-        toast({
-          title: "Location updated",
-          description: "Using your current GPS location",
-          variant: "success",
-        });
-      },
-      () => {
-        setIsRequestingGps(false);
-        toast({
-          title: "Location access denied",
-          description: "Enter your city or neighborhood manually below.",
-          variant: "default",
-        });
-      }
-    );
+    const accuracyLabel = formatAccuracyMeters(position.accuracy);
+    toast({
+      title: "Location updated",
+      description: isLowGpsAccuracy(position.accuracy)
+        ? `Saved with ${accuracyLabel}. Low GPS accuracy — try again outdoors or use manual entry.`
+        : `Using your current GPS location (${accuracyLabel})`,
+      variant: isLowGpsAccuracy(position.accuracy) ? "default" : "success",
+    });
   };
 
   const handleManualGeocode = async () => {
@@ -79,6 +77,7 @@ export const LocationUpdate = ({
       form.setValue("latitude", result.latitude);
       form.setValue("longitude", result.longitude);
       form.setValue("location_label", result.label);
+      updateLocation(result.latitude, result.longitude, null);
       onGpsUpdate?.(result.latitude, result.longitude);
       toast({
         title: "Location saved",
@@ -96,18 +95,29 @@ export const LocationUpdate = ({
     }
   };
 
+  const locationSummary = hasLocation
+    ? locationLabel ||
+      (accuracy != null
+        ? `GPS location saved ${formatAccuracyMeters(accuracy)}`
+        : "Location saved")
+    : "Location required for nearby matching";
+
   return (
     <div className="space-y-4">
       <p
         className={cn(
           "text-sm",
-          hasLocation ? "text-foreground" : "text-muted-foreground"
+          hasLocation ? "text-foreground" : "text-muted-foreground",
         )}
       >
-        {hasLocation
-          ? locationLabel || "Location saved"
-          : "Location required for nearby matching"}
+        {locationSummary}
       </p>
+
+      {hasLocation && accuracy != null && isLowGpsAccuracy(accuracy) && (
+        <p className="text-xs text-amber-600 dark:text-amber-400">
+          Low GPS accuracy — try again outdoors or use manual entry.
+        </p>
+      )}
 
       <Button
         type="button"
@@ -119,7 +129,7 @@ export const LocationUpdate = ({
         {isRequestingGps ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Requesting GPS...
+            Getting precise location...
           </>
         ) : hasLocation ? (
           "Update GPS location"
@@ -129,7 +139,8 @@ export const LocationUpdate = ({
       </Button>
 
       <p className="text-xs text-muted-foreground">
-        GPS uses your browser location only after you tap the button above.
+        GPS uses high-accuracy mode in your browser after you tap the button
+        above.
       </p>
 
       <div className="space-y-2 border-t border-border/60 pt-4">

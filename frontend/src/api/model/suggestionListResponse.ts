@@ -12,4 +12,6 @@ export interface SuggestionListResponse {
   total: number;
   limit: number;
   offset: number;
+  viewer_latitude?: number | null;
+  viewer_longitude?: number | null;
 }

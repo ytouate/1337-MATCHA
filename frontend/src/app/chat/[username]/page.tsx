@@ -8,15 +8,21 @@ import { useChatThread } from "@/hooks/chat/useChatThread";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { CalendarHeart, Phone } from "lucide-react";
+import { ScheduleDateDialog } from "@/components/dates/ScheduleDateDialog";
+import { useAudioCall } from "@/hooks/chat/useAudioCall";
 
 export default function ChatThreadPage() {
   const params = useParams();
   const username = params?.username as string;
   const [draft, setDraft] = useState("");
+  const [planDateOpen, setPlanDateOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { messages, isLoading, isSending, isConnected, error, send } =
     useChatThread(username);
+  const { startCall, status: callStatus } = useAudioCall();
+  const callActive = callStatus !== "idle";
 
   useEffect(() => {
     if (isLoading) return;
@@ -41,8 +47,8 @@ export default function ChatThreadPage() {
     <AuthenticatedLayout>
       <div className="mx-auto flex h-[calc(100dvh-5rem)] max-w-2xl flex-col px-4 py-6 sm:px-6">
         <div className="mb-4">
-          <Link href="/chat" className="text-sm text-primary hover:underline">
-            Back to messages
+          <Link href="/connections" className="text-sm text-primary hover:underline">
+            Back to connections
           </Link>
           <div className="mt-2 flex items-center gap-2">
             <h1 className="text-xl font-semibold">@{username}</h1>
@@ -51,6 +57,26 @@ export default function ChatThreadPage() {
             >
               {isConnected ? "Live" : "Connecting..."}
             </span>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={() => setPlanDateOpen(true)}
+              className="ml-auto"
+            >
+              <CalendarHeart className="mr-1.5 h-4 w-4" />
+              Plan date
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={!isConnected || callActive}
+              onClick={() => startCall(username)}
+            >
+              <Phone className="mr-1.5 h-4 w-4" />
+              Audio call
+            </Button>
           </div>
           {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
         </div>
@@ -96,6 +122,11 @@ export default function ChatThreadPage() {
             {isSending ? "Sending..." : "Send"}
           </Button>
         </form>
+        <ScheduleDateDialog
+          username={username}
+          open={planDateOpen}
+          onOpenChange={setPlanDateOpen}
+        />
       </div>
     </AuthenticatedLayout>
   );

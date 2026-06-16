@@ -19,4 +19,6 @@ export interface SuggestedProfile {
   common_interest_count?: number;
   distance_km?: number | null;
   location_label?: string | null;
+  map_latitude?: number | null;
+  map_longitude?: number | null;
 }

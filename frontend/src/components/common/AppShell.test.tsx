@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
   useRouter: () => ({ replace: vi.fn() }),
+  usePathname: () => "/",
 }));
 
 vi.mock("@/hooks/use-toast", () => ({
@@ -26,11 +27,27 @@ vi.mock("@/contexts/AuthModalContext", () => ({
 }));
 
 vi.mock("@/store/auth", () => ({
-  useAuthStore: () => ({ isAuthenticated: true }),
+  useAuthStore: () => ({
+    isAuthenticated: true,
+    user: {
+      username: "alice",
+      first_name: "Alice",
+      last_name: "Smith",
+      profile_picture: null,
+    },
+  }),
 }));
 
 vi.mock("@/hooks/auth/useSignout", () => ({
   useSignout: () => ({ mutate: vi.fn() }),
+}));
+
+vi.mock("next-themes", () => ({
+  useTheme: () => ({ theme: "light", setTheme: vi.fn() }),
+}));
+
+vi.mock("@/components/common/NotificationBell", () => ({
+  NotificationBell: () => <div>Notifications</div>,
 }));
 
 vi.mock("@/components/auth/Signin", () => ({
@@ -55,7 +72,8 @@ describe("AppShell", () => {
     );
 
     expect(screen.getByText("MATCHA")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Logout" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Account menu" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open menu" })).toBeInTheDocument();
     expect(screen.getByText("Page content")).toBeInTheDocument();
   });
 });

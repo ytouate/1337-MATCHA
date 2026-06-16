@@ -5,6 +5,11 @@ from fastapi import HTTPException
 
 from src.schemas.suggestion import SortBy, SuggestionQuery
 from src.services import suggestion_service
+from src.services.location_utils import (
+    MAP_FUZZ_MAX_METERS,
+    fuzz_map_coordinates,
+    haversine_distance_meters,
+)
 
 
 def _patch_pg(mock_pg_cursor):
@@ -25,12 +30,15 @@ COMPLETE_VIEWER = {
 }
 
 CANDIDATE_ROW = {
+    "id": 2,
     "username": "alice",
     "first_name": "Alice",
     "last_name": "Smith",
     "bio": "Hello there",
     "fame_rating": 5,
     "location_label": "Casablanca",
+    "latitude": 33.58,
+    "longitude": -7.59,
     "age": 25,
     "interest_list": ["Travel", "Cooking"],
     "common_interests": ["Travel"],
@@ -38,6 +46,21 @@ CANDIDATE_ROW = {
     "profile_picture_path": "alice@example.com/pic.png",
     "distance_km": 12.5,
 }
+
+
+class TestFuzzMapCoordinates:
+    def test_fuzz_is_deterministic_for_same_user(self):
+        first = fuzz_map_coordinates(42, 48.8566, 2.3522)
+        second = fuzz_map_coordinates(42, 48.8566, 2.3522)
+        assert first == second
+
+    def test_fuzz_offset_stays_within_expected_radius(self):
+        latitude = 48.8566
+        longitude = 2.3522
+        map_lat, map_lng = fuzz_map_coordinates(7, latitude, longitude)
+        distance = haversine_distance_meters(latitude, longitude, map_lat, map_lng)
+
+        assert MAP_FUZZ_MAX_METERS >= distance >= 300
 
 
 class TestGetSuggestions:
@@ -94,6 +117,14 @@ class TestGetSuggestions:
         assert response.results[0].common_interest_count == 1
         assert response.results[0].distance_km == 12.5
         assert "/api/images/" in response.results[0].profile_picture
+        assert response.viewer_latitude == COMPLETE_VIEWER["latitude"]
+        assert response.viewer_longitude == COMPLETE_VIEWER["longitude"]
+        assert response.results[0].map_latitude is not None
+        assert response.results[0].map_longitude is not None
+        assert (
+            response.results[0].map_latitude,
+            response.results[0].map_longitude,
+        ) != (CANDIDATE_ROW["latitude"], CANDIDATE_ROW["longitude"])
 
     def test_executes_count_and_data_queries_with_fame_filters(self, mock_pg_cursor):
         cursor, _, _ = mock_pg_cursor

@@ -50,4 +50,17 @@ describe("notificationPresentation", () => {
       getNotificationDescription({ ...baseNotification, type: "unlike" })
     ).toBe("is no longer connected with you");
   });
+
+  it("builds date notification hrefs and labels", () => {
+    const dateNotification: NotificationResponse = {
+      ...baseNotification,
+      type: "date_proposed",
+      payload: { date_id: 42, scheduled_at: "2026-06-20T18:30:00" },
+    };
+
+    expect(getNotificationHref(dateNotification)).toBe("/dates/42");
+    expect(getNotificationDescription(dateNotification)).toBe("proposed a date");
+    expect(getNotificationActionLabel(dateNotification)).toBe("View date");
+    expect(getNotificationListLabel(dateNotification)).toBe("proposed a date");
+  });
 });

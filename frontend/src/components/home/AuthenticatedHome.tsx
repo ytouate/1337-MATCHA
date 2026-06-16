@@ -1,10 +1,8 @@
 "use client";
 
 import { Suspense } from "react";
-import Link from "next/link";
 import { useAuthStore } from "@/store/auth";
 import { AuthenticatedLayout } from "../common/AuthenticatedLayout";
-import { Button } from "../ui/button";
 import { ActiveFilterChips } from "@/components/browse/ActiveFilterChips";
 import {
   BrowseFilters,
@@ -45,17 +43,6 @@ function SearchContent() {
             Filter and sort matching profiles by age, location, fame rating,
             and shared interests.
           </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/profile/edit">Edit profile</Link>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/profile/me/viewers">Viewers</Link>
-          </Button>
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/profile/me/likes">Likes</Link>
-          </Button>
         </div>
       </header>
 

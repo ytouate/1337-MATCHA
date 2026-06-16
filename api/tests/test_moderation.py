@@ -51,3 +51,21 @@ class TestModeration:
                 moderation_service.block_user(1, "selfuser")
 
         assert exc.value.status_code == 400
+
+    def test_get_blocked_users(self, mock_pg_cursor):
+        cursor, _, _ = mock_pg_cursor
+        cursor.fetchall.return_value = [
+            {
+                "username": "blocked",
+                "first_name": "Bob",
+                "last_name": "Blocked",
+                "profile_picture": None,
+                "blocked_at": "2026-01-01T12:00:00",
+            }
+        ]
+
+        with _patch_pg(mock_pg_cursor):
+            result = moderation_service.get_blocked_users(1)
+
+        assert len(result) == 1
+        assert result[0]["username"] == "blocked"

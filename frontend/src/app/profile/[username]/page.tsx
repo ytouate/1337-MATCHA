@@ -2,9 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { Heart, MessageCircle, ShieldBan, Flag } from "lucide-react";
+import { Heart, MessageCircle, ShieldBan, Flag, CalendarHeart } from "lucide-react";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { AuthenticatedLayout } from "@/components/common/AuthenticatedLayout";
+import { ScheduleDateDialog } from "@/components/dates/ScheduleDateDialog";
 import { ProfileImage } from "@/components/profile/ProfileImage";
 import {
   PhotoGalleryViewer,
@@ -17,6 +19,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/store/auth";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { useToast } from "@/hooks/use-toast";
 
 function formatLastSeen(lastSeenAt?: string | null) {
   if (!lastSeenAt) return "Last seen unknown";
@@ -28,6 +32,10 @@ export default function ProfilePage() {
   const username = params?.username as string;
   const { user: currentUser } = useAuthStore();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [planDateOpen, setPlanDateOpen] = useState(false);
+  const [blockOpen, setBlockOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const { data: profile, isLoading, isError } = useQuery({
     queryKey: ["profile", username],
@@ -66,6 +74,28 @@ export default function ProfilePage() {
         reason: "Suspected fake account",
       }),
   });
+
+  const handleBlock = async () => {
+    try {
+      await blockMutation.mutateAsync();
+      toast({ title: "User blocked", variant: "default" });
+    } catch {
+      toast({ title: "Could not block user", variant: "error" });
+    }
+  };
+
+  const handleReport = async () => {
+    try {
+      await reportMutation.mutateAsync();
+      toast({
+        title: "Report submitted",
+        description: "Thanks for helping keep Matcha safe.",
+        variant: "success",
+      });
+    } catch {
+      toast({ title: "Could not submit report", variant: "error" });
+    }
+  };
 
   const isOwnProfile = currentUser?.username === username;
   const isLiked = profile?.is_liked_by_viewer ?? false;
@@ -187,18 +217,28 @@ export default function ProfilePage() {
                 )}
 
                 {profile.is_connected && (
-                  <Button size="sm" asChild>
-                    <Link href={`/chat/${profile.username}`}>
-                      <MessageCircle className="mr-1.5 h-4 w-4" />
-                      Message
-                    </Link>
-                  </Button>
+                  <>
+                    <Button size="sm" asChild>
+                      <Link href={`/chat/${profile.username}`}>
+                        <MessageCircle className="mr-1.5 h-4 w-4" />
+                        Message
+                      </Link>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setPlanDateOpen(true)}
+                    >
+                      <CalendarHeart className="mr-1.5 h-4 w-4" />
+                      Plan date
+                    </Button>
+                  </>
                 )}
 
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => blockMutation.mutate()}
+                  onClick={() => setBlockOpen(true)}
                   disabled={blockMutation.isPending}
                 >
                   <ShieldBan className="mr-1.5 h-4 w-4" />
@@ -208,7 +248,7 @@ export default function ProfilePage() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => reportMutation.mutate()}
+                  onClick={() => setReportOpen(true)}
                   disabled={reportMutation.isPending}
                 >
                   <Flag className="mr-1.5 h-4 w-4" />
@@ -300,6 +340,37 @@ export default function ProfilePage() {
           </div>
         )}
         {content()}
+        {profile?.is_connected && !isOwnProfile && (
+          <ScheduleDateDialog
+            username={username}
+            open={planDateOpen}
+            onOpenChange={setPlanDateOpen}
+          />
+        )}
+        {!isOwnProfile && currentUser && profile && (
+          <>
+            <ConfirmDialog
+              open={blockOpen}
+              onOpenChange={setBlockOpen}
+              title={`Block @${profile.username}?`}
+              description="They won't be able to see your profile or contact you. You can unblock them later from your settings."
+              confirmLabel="Block"
+              variant="destructive"
+              loading={blockMutation.isPending}
+              onConfirm={handleBlock}
+            />
+            <ConfirmDialog
+              open={reportOpen}
+              onOpenChange={setReportOpen}
+              title={`Report @${profile.username}?`}
+              description="We'll review this profile for suspicious activity. Your report stays private."
+              confirmLabel="Report"
+              variant="destructive"
+              loading={reportMutation.isPending}
+              onConfirm={handleReport}
+            />
+          </>
+        )}
       </div>
     </AuthenticatedLayout>
   );

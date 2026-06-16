@@ -10,6 +10,7 @@ from src.schemas.suggestion import (
     SuggestionListResponse,
     SuggestionQuery,
 )
+from src.services.location_utils import fuzz_map_coordinates
 from src.services.user_service import _image_public_url
 
 DEFAULT_SORT_ORDER = {
@@ -77,6 +78,8 @@ def _build_suggestions_query(query: SuggestionQuery) -> tuple[str, str, dict[str
                 u.bio,
                 u.fame_rating,
                 u.location_label,
+                u.latitude,
+                u.longitude,
                 EXTRACT(YEAR FROM AGE(u.birthdate))::int AS age,
                 (
                     SELECT COALESCE(array_agg(i.name ORDER BY i.name), ARRAY[]::varchar[])
@@ -216,6 +219,14 @@ def get_suggestions(
         interest_list = row.get("interest_list") or []
         common_interests = row.get("common_interests") or []
         profile_picture_path = row.get("profile_picture_path")
+        map_latitude = None
+        map_longitude = None
+        if row.get("latitude") is not None and row.get("longitude") is not None:
+            map_latitude, map_longitude = fuzz_map_coordinates(
+                int(row["id"]),
+                float(row["latitude"]),
+                float(row["longitude"]),
+            )
 
         results.append(
             SuggestedProfile(
@@ -239,6 +250,8 @@ def get_suggestions(
                     else None
                 ),
                 location_label=row.get("location_label"),
+                map_latitude=round(map_latitude, 6) if map_latitude is not None else None,
+                map_longitude=round(map_longitude, 6) if map_longitude is not None else None,
             )
         )
 
@@ -247,4 +260,6 @@ def get_suggestions(
         total=total,
         limit=query.limit,
         offset=query.offset,
+        viewer_latitude=float(viewer["latitude"]),
+        viewer_longitude=float(viewer["longitude"]),
     )

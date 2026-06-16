@@ -42,6 +42,8 @@ class SuggestedProfile(BaseModel):
     common_interest_count: int = 0
     distance_km: Optional[float] = None
     location_label: Optional[str] = None
+    map_latitude: Optional[float] = None
+    map_longitude: Optional[float] = None
 
 
 class SuggestionListResponse(BaseModel):
@@ -49,3 +51,5 @@ class SuggestionListResponse(BaseModel):
     total: int
     limit: int
     offset: int
+    viewer_latitude: Optional[float] = None
+    viewer_longitude: Optional[float] = None

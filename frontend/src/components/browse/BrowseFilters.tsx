@@ -59,18 +59,26 @@ function filtersToSearchParams(filters: BrowseFiltersState): string {
   return params.toString();
 }
 
-export function useBrowseFiltersFromUrl() {
+export function buildBrowseUrl(
+  basePath: "/" | "/map",
+  filters: BrowseFiltersState,
+): string {
+  const query = filtersToSearchParams(filters);
+  return query ? `${basePath}?${query}` : basePath;
+}
+
+export function useBrowseFiltersFromUrl(basePath: "/" | "/map" = "/") {
   const searchParams = useSearchParams();
   const router = useRouter();
 
   const filters = useMemo(
     () => parseFiltersFromParams(searchParams),
-    [searchParams]
+    [searchParams],
   );
 
   const setFilters = (next: BrowseFiltersState) => {
     const query = filtersToSearchParams(next);
-    router.replace(query ? `/?${query}` : "/", { scroll: false });
+    router.replace(query ? `${basePath}?${query}` : basePath, { scroll: false });
   };
 
   return { filters, setFilters };

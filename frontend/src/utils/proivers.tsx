@@ -6,6 +6,7 @@ import { ReactNode, useState } from "react";
 import { useAuthCheck } from "@/hooks/auth/useAuthCheck";
 import { AuthModalProvider } from "@/contexts/AuthModalContext";
 import { ChatSocketProvider } from "@/contexts/ChatSocketContext";
+import { CallManager } from "@/components/chat/CallManager";
 import { GlobalNotificationNotifier } from "@/components/common/GlobalNotificationNotifier";
 import { AppShell } from "@/components/common/AppShell";
 
@@ -37,8 +38,10 @@ export default function Providers({ children }: { children: ReactNode }) {
         <AuthProvider>
           <AuthModalProvider>
             <ChatSocketProvider>
-              <GlobalNotificationNotifier />
-              <AppShell>{children}</AppShell>
+              <CallManager>
+                <GlobalNotificationNotifier />
+                <AppShell>{children}</AppShell>
+              </CallManager>
             </ChatSocketProvider>
           </AuthModalProvider>
         </AuthProvider>

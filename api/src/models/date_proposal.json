@@ -1,0 +1,67 @@
+[
+  {
+    "name": "id",
+    "type": { "type": "SERIAL" },
+    "is_primary": true,
+    "is_null": false
+  },
+  {
+    "name": "proposer_id",
+    "type": { "type": "INTEGER" },
+    "is_null": false,
+    "references": { "table": "users", "column": "id", "on_delete": "CASCADE" }
+  },
+  {
+    "name": "invitee_id",
+    "type": { "type": "INTEGER" },
+    "is_null": false,
+    "references": { "table": "users", "column": "id", "on_delete": "CASCADE" }
+  },
+  {
+    "name": "status",
+    "type": { "type": "VARCHAR(16)" },
+    "is_null": false
+  },
+  {
+    "name": "scheduled_at",
+    "type": { "type": "TIMESTAMP" },
+    "is_null": false
+  },
+  {
+    "name": "location_label",
+    "type": { "type": "VARCHAR(128)" },
+    "is_null": true
+  },
+  {
+    "name": "latitude",
+    "type": { "type": "DECIMAL(9,6)" },
+    "is_null": true
+  },
+  {
+    "name": "longitude",
+    "type": { "type": "DECIMAL(9,6)" },
+    "is_null": true
+  },
+  {
+    "name": "note",
+    "type": { "type": "VARCHAR(500)" },
+    "is_null": true
+  },
+  {
+    "name": "created_at",
+    "type": { "type": "TIMESTAMP" },
+    "is_null": false,
+    "default": "CURRENT_TIMESTAMP"
+  },
+  {
+    "name": "updated_at",
+    "type": { "type": "TIMESTAMP" },
+    "is_null": false,
+    "default": "CURRENT_TIMESTAMP"
+  },
+  {
+    "name": "responded_at",
+    "type": { "type": "TIMESTAMP" },
+    "is_null": true
+  }
+]

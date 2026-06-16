@@ -6,6 +6,7 @@
  * OpenAPI spec version: 1.0.0
  */
 import type {
+  BlockedUsersListResponse,
   ChatMessageCreate,
   ChatMessageResponse,
   ReportRequest
@@ -27,6 +28,17 @@ const getMyConnectionsApiUsersMeConnectionsGet = (
  options?: SecondParameter<typeof customInstance<unknown>>,) => {
       return customInstance<unknown>(
       {url: `/api/users/me/connections`, method: 'GET'
+    },
+      options);
+    }
+  /**
+ * @summary Get My Blocked Users
+ */
+const getMyBlockedUsersApiUsersMeBlockedGet = (
+
+ options?: SecondParameter<typeof customInstance<BlockedUsersListResponse>>,) => {
+      return customInstance<BlockedUsersListResponse>(
+      {url: `/api/users/me/blocked`, method: 'GET'
     },
       options);
     }
@@ -91,8 +103,9 @@ const sendChatMessageApiChatUsernameMessagesPost = (
     },
       options);
     }
-  return {getMyConnectionsApiUsersMeConnectionsGet,blockUserApiUsersUsernameBlockPost,unblockUserApiUsersUsernameBlockDelete,reportUserApiUsersUsernameReportPost,getChatMessagesApiChatUsernameMessagesGet,sendChatMessageApiChatUsernameMessagesPost}};
+  return {getMyConnectionsApiUsersMeConnectionsGet,getMyBlockedUsersApiUsersMeBlockedGet,blockUserApiUsersUsernameBlockPost,unblockUserApiUsersUsernameBlockDelete,reportUserApiUsersUsernameReportPost,getChatMessagesApiChatUsernameMessagesGet,sendChatMessageApiChatUsernameMessagesPost}};
 export type GetMyConnectionsApiUsersMeConnectionsGetResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getSocial>['getMyConnectionsApiUsersMeConnectionsGet']>>>
+export type GetMyBlockedUsersApiUsersMeBlockedGetResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getSocial>['getMyBlockedUsersApiUsersMeBlockedGet']>>>
 export type BlockUserApiUsersUsernameBlockPostResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getSocial>['blockUserApiUsersUsernameBlockPost']>>>
 export type UnblockUserApiUsersUsernameBlockDeleteResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getSocial>['unblockUserApiUsersUsernameBlockDelete']>>>
 export type ReportUserApiUsersUsernameReportPostResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getSocial>['reportUserApiUsersUsernameReportPost']>>>

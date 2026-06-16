@@ -153,6 +153,7 @@ class DatabaseHelper:
         user_reports = DatabaseHelper.get_table_data("user_report.json")
         chat_messages = DatabaseHelper.get_table_data("chat_message.json")
         notifications = DatabaseHelper.get_table_data("notification.json")
+        date_proposals = DatabaseHelper.get_table_data("date_proposal.json")
 
         DatabaseHelper.create_table("users", user_columns)
         DatabaseHelper.create_table("interests", interest_columns)
@@ -164,3 +165,4 @@ class DatabaseHelper:
         DatabaseHelper.create_table("user_reports", user_reports)
         DatabaseHelper.create_table("chat_messages", chat_messages)
         DatabaseHelper.create_table("notifications", notifications)
+        DatabaseHelper.create_table("date_proposals", date_proposals)

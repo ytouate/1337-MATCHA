@@ -15,16 +15,20 @@ import { useAuthStore } from "@/store/auth";
 import type { ChatMessageResponse, NotificationResponse } from "@/api/model";
 import { getActiveChatUsername } from "@/lib/messageNotifications";
 
+type CallSignalData = Record<string, unknown>;
+
 type WsEvent =
   | { event: "chat.history"; data: { username: string; messages: ChatMessageResponse[] } }
   | { event: "chat.message"; data: { username: string; message: ChatMessageResponse } }
   | { event: "notification.new"; data: { notification: NotificationResponse } }
-  | { event: "error"; data: { detail: string } };
+  | { event: "error"; data: { detail: string } }
+  | { event: `call.${string}`; data: CallSignalData };
 
 interface ChatSocketContextValue {
   isConnected: boolean;
   sendMessage: (username: string, body: string) => Promise<void>;
   loadHistory: (username: string) => Promise<ChatMessageResponse[]>;
+  sendCallSignal: (event: string, data: CallSignalData) => Promise<void>;
   subscribe: (
     username: string,
     handlers: {
@@ -34,6 +38,9 @@ interface ChatSocketContextValue {
   ) => () => void;
   subscribeNotifications: (
     handler: (notification: NotificationResponse) => void
+  ) => () => void;
+  subscribeCall: (
+    handler: (event: string, data: CallSignalData) => void
   ) => () => void;
 }
 
@@ -101,6 +108,9 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
   >(new Map());
   const notificationSubscribersRef = useRef<
     Set<(notification: NotificationResponse) => void>
+  >(new Set());
+  const callSubscribersRef = useRef<
+    Set<(event: string, data: CallSignalData) => void>
   >(new Set());
   const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
@@ -173,6 +183,13 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
 
         notificationSubscribersRef.current.forEach((handler) => {
           handler(notification);
+        });
+        return;
+      }
+
+      if (payload.event.startsWith("call.")) {
+        callSubscribersRef.current.forEach((handler) => {
+          handler(payload.event, payload.data);
         });
         return;
       }
@@ -458,6 +475,29 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
     []
   );
 
+  const sendCallSignal = useCallback(
+    async (event: string, data: CallSignalData) => {
+      await waitForSocket();
+      const socket = socketRef.current;
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        throw new Error("WebSocket is not connected");
+      }
+
+      socket.send(JSON.stringify({ event, data }));
+    },
+    [waitForSocket],
+  );
+
+  const subscribeCall = useCallback(
+    (handler: (event: string, data: CallSignalData) => void) => {
+      callSubscribersRef.current.add(handler);
+      return () => {
+        callSubscribersRef.current.delete(handler);
+      };
+    },
+    [],
+  );
+
   const subscribeNotifications = useCallback(
     (handler: (notification: NotificationResponse) => void) => {
       notificationSubscribersRef.current.add(handler);
@@ -474,8 +514,10 @@ export function ChatSocketProvider({ children }: { children: ReactNode }) {
         isConnected,
         sendMessage,
         loadHistory,
+        sendCallSignal,
         subscribe,
         subscribeNotifications,
+        subscribeCall,
       }}
     >
       {children}

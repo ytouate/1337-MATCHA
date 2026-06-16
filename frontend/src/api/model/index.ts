@@ -6,23 +6,31 @@
  * OpenAPI spec version: 1.0.0
  */
 
+export * from './blockedUsersListResponse';
+export * from './blockedUserSummary';
 export * from './bodyUploadFilesApiUploadPost';
 export * from './chatMessageCreate';
 export * from './chatMessageResponse';
+export * from './dateProposalCreate';
+export * from './dateProposalListResponse';
+export * from './dateProposalResponse';
 export * from './emailVerificationApiAuthEmailVerificationGetParams';
 export * from './gender';
 export * from './geocodeRequest';
 export * from './geocodeResponse';
 export * from './getSuggestionsApiUsersSuggestionsGetParams';
 export * from './hTTPValidationError';
+export * from './listDateProposalsApiDatesGetParams';
 export * from './notificationActor';
 export * from './notificationResponse';
 export * from './notificationResponsePayload';
+export * from './oauth42CallbackApiAuthOauth42CallbackGetParams';
 export * from './passwordResetConfirm';
 export * from './passwordResetRequest';
 export * from './reportRequest';
 export * from './signInData';
 export * from './signupData';
+export * from './socialUserSummary';
 export * from './sortBy';
 export * from './sortOrder';
 export * from './suggestedProfile';

@@ -7,6 +7,7 @@ from jose import JWTError, jwt
 from src.core.config import JWT_ALGORITHM, JWT_SECRET_KEY
 from src.db.database import PgDatabase
 from src.services import chat_service
+from src.services.call_service import CALL_EVENT_MAP, relay_call_event
 from src.services.presence_service import mark_offline, mark_online, touch_last_seen
 from src.services.ws_manager import ws_manager
 
@@ -98,6 +99,12 @@ async def websocket_endpoint(websocket: WebSocket):
                             },
                         }
                     )
+                except HTTPException as exc:
+                    await _send_error(websocket, str(exc.detail))
+
+            elif event in CALL_EVENT_MAP:
+                try:
+                    await relay_call_event(user_id, event, data)
                 except HTTPException as exc:
                     await _send_error(websocket, str(exc.detail))
 

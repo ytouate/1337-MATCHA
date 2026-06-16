@@ -8,6 +8,7 @@ dotenv.load_dotenv()
 from fastapi import FastAPI
 
 from src.api.endpoints.auth import router as auth_router
+from src.api.endpoints.dates import router as dates_router
 from src.api.endpoints.images import router as images_router
 from src.api.endpoints.interests import router as interests_router
 from src.api.endpoints.location import router as location_router
@@ -40,6 +41,7 @@ setup_cors(app)
 app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(social_router)
+app.include_router(dates_router)
 app.include_router(notifications_router)
 app.include_router(ws_router)
 app.include_router(upload_router)
