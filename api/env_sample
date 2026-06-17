@@ -32,3 +32,6 @@ FORTY_TWO_REDIRECT_URI=
 COOKIE_DOMAIN=localhost
 COOKIE_SECURE=false
 ENV=development
+
+# Evaluation seed login for seeduser001..seeduser500 (see seed_profiles.py)
+# Password: SeedPassword123!

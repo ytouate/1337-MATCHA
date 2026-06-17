@@ -21,6 +21,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/store/auth";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useToast } from "@/hooks/use-toast";
+import { uniqueStrings } from "@/lib/uniqueStrings";
 
 function formatLastSeen(lastSeenAt?: string | null) {
   if (!lastSeenAt) return "Last seen unknown";
@@ -288,7 +289,7 @@ export default function ProfilePage() {
               Interests
             </h2>
             <div className="flex flex-wrap gap-2">
-              {profile.interests.map((interest) => (
+              {uniqueStrings(profile.interests).map((interest) => (
                 <Badge key={interest} variant="outline">
                   #{interest.toLowerCase().replace(/\s+/g, "")}
                 </Badge>

@@ -25,4 +25,6 @@ interests = [
 
 if __name__ == "__main__":
     for interest in interests:
+        if DatabaseHelper.field_exists("interests", "name", interest):
+            continue
         DatabaseHelper.create_row("interests", {"name": interest})

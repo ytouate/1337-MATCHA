@@ -294,7 +294,7 @@ def get_user_profile_by_id(user_id: int) -> dict:
 
 def list_interests() -> list[str]:
     with PgDatabase() as db:
-        db.cursor.execute("SELECT name FROM interests ORDER BY name")
+        db.cursor.execute("SELECT DISTINCT name FROM interests ORDER BY name")
         return [row["name"] for row in db.cursor.fetchall()]
 
 

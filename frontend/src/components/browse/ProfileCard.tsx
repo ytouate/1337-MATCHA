@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { uniqueStrings } from "@/lib/uniqueStrings";
 import { Heart } from "lucide-react";
 import { ProfileImage } from "@/components/profile/ProfileImage";
 import { Badge } from "@/components/ui/badge";
@@ -59,7 +60,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
 
           {profile.common_interests && profile.common_interests.length > 0 && (
             <div className="flex flex-wrap gap-1">
-              {profile.common_interests.slice(0, 3).map((tag) => (
+              {uniqueStrings(profile.common_interests).slice(0, 3).map((tag) => (
                 <Badge key={tag} variant="outline" className="text-[10px]">
                   #{tag.toLowerCase().replace(/\s+/g, "")}
                 </Badge>

@@ -22,6 +22,7 @@ import {
   sanitizeBrowseFilters,
 } from "@/hooks/browse/useSuggestions";
 import { cn } from "@/lib/utils";
+import { uniqueStrings } from "@/lib/uniqueStrings";
 
 interface BrowseFiltersProps {
   filters: BrowseFiltersState;
@@ -103,7 +104,7 @@ export function BrowseFilters({ filters, onChange }: BrowseFiltersProps) {
       const response = (await interestsApi.listInterestsApiInterestsGet()) as {
         interests: string[];
       };
-      return response.interests;
+      return uniqueStrings(response.interests);
     },
   });
 

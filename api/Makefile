@@ -1,7 +1,7 @@
 COMPOSE_COMMAND := docker-compose
 DOCKERFILE := docker-compose.yaml
 
-.PHONY: backend build logs exec down restart psql create-tables seed-interests install test
+.PHONY: backend build logs exec down restart psql create-tables seed-interests seed-profiles seed-profiles-force seed-eval verify-seed install test
 
 install:
 	poetry install --with dev
@@ -27,6 +27,17 @@ create-tables:
 
 seed-interests:
 	$(COMPOSE_COMMAND) -f $(DOCKERFILE) exec app poetry run python insert_interests.py
+
+seed-profiles:
+	$(COMPOSE_COMMAND) -f $(DOCKERFILE) exec app poetry run python seed_profiles.py
+
+seed-profiles-force:
+	$(COMPOSE_COMMAND) -f $(DOCKERFILE) exec app poetry run python seed_profiles.py --force
+
+seed-eval: create-tables seed-interests seed-profiles
+
+verify-seed:
+	$(COMPOSE_COMMAND) -f $(DOCKERFILE) exec app poetry run python seed_profiles.py --verify
 
 down:
 	$(COMPOSE_COMMAND) -f $(DOCKERFILE) down

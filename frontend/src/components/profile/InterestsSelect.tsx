@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { uniqueStrings } from "@/lib/uniqueStrings";
 import { interestsApi } from "@/api/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -22,7 +23,7 @@ export function InterestsSelect({
       const response = (await interestsApi.listInterestsApiInterestsGet()) as {
         interests: string[];
       };
-      return response.interests;
+      return uniqueStrings(response.interests);
     },
   });
 
