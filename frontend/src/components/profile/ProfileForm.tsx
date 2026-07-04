@@ -1,12 +1,13 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { useEffect, useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import type { UserProfileResponse } from "@/api/model";
+import { Gender } from "@/api/model";
+import { InterestsSelect } from "@/components/profile/InterestsSelect";
+import { LocationUpdate } from "@/components/profile/LocationUpdate";
+import {
+  PhotoGalleryManager,
+  type GalleryImageItem,
+} from "@/components/profile/PhotoGalleryManager";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -32,19 +33,22 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  PhotoGalleryManager,
-  type GalleryImageItem,
-} from "@/components/profile/PhotoGalleryManager";
-import { InterestsSelect } from "@/components/profile/InterestsSelect";
-import { LocationUpdate } from "@/components/profile/LocationUpdate";
-import { useAuthStore } from "@/store/auth";
-import { Gender } from "@/api/model";
-import type { UserProfileResponse } from "@/api/model";
 import { useAuthCheck } from "@/hooks/auth/useAuthCheck";
 import { useGetMe } from "@/hooks/auth/useGetMe";
+import {
+  getProfilePictureIndex,
+  profileImagesToGalleryItems,
+  saveGalleryImages,
+} from "@/hooks/profile/useGallerySave";
 import { useToast } from "@/hooks/use-toast";
-import { saveGalleryImages, profileImagesToGalleryItems, getProfilePictureIndex } from "@/hooks/profile/useGallerySave";
+import { useAuthStore } from "@/store/auth";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
 
 const baseFormSchema = z.object({
   bio: z.string().min(10, "Bio must be at least 10 characters").max(255),
@@ -118,7 +122,7 @@ export function ProfileForm({ mode = "complete" }: ProfileFormProps) {
     setImages(existingImages);
 
     setProfilePicture(
-      getProfilePictureIndex(profile.images, profile.profile_picture)
+      getProfilePictureIndex(profile.images, profile.profile_picture),
     );
     setInitialized(true);
   }, [mode, profile, initialized, form]);
@@ -129,7 +133,7 @@ export function ProfileForm({ mode = "complete" }: ProfileFormProps) {
       if (user.sexual_preference) {
         form.setValue(
           "sexual_preference",
-          user.sexual_preference as "Male" | "Female"
+          user.sexual_preference as "Male" | "Female",
         );
       }
       if (user.latitude != null) form.setValue("latitude", user.latitude);
@@ -146,7 +150,7 @@ export function ProfileForm({ mode = "complete" }: ProfileFormProps) {
       watched.interests.length >= 1,
       watched.latitude !== null && watched.longitude !== null,
     ],
-    [watched, images.length]
+    [watched, images.length],
   );
 
   const completedCount = completionSteps.filter(Boolean).length;
@@ -158,20 +162,15 @@ export function ProfileForm({ mode = "complete" }: ProfileFormProps) {
         throw new Error("At least one image is required");
       }
 
-      await saveGalleryImages(
-        user?.username || "",
-        images,
-        profilePicture,
-        {
-          bio: data.bio,
-          gender: data.gender as Gender,
-          sexual_preference: data.sexual_preference as Gender,
-          interests: data.interests,
-          latitude: data.latitude ?? undefined,
-          longitude: data.longitude ?? undefined,
-          location_label: data.location_label ?? undefined,
-        }
-      );
+      await saveGalleryImages(user?.username || "", images, profilePicture, {
+        bio: data.bio,
+        gender: data.gender as Gender,
+        sexual_preference: data.sexual_preference as Gender,
+        interests: data.interests,
+        latitude: data.latitude ?? undefined,
+        longitude: data.longitude ?? undefined,
+        location_label: data.location_label ?? undefined,
+      });
     },
     onSuccess: async () => {
       toast({
