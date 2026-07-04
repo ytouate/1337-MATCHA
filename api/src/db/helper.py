@@ -142,6 +142,40 @@ class DatabaseHelper:
             return result
 
     @staticmethod
+    def _migrations_dir() -> str:
+        return os.path.join(os.path.dirname(__file__), "..", "..", "migrations")
+
+    @staticmethod
+    def _split_sql_script(sql: str) -> List[str]:
+        lines = []
+        for line in sql.splitlines():
+            if line.strip().startswith("--"):
+                continue
+            lines.append(line)
+        cleaned = "\n".join(lines)
+        return [part.strip() for part in cleaned.split(";") if part.strip()]
+
+    @staticmethod
+    def run_sql_script(sql: str, commit: bool = True) -> None:
+        statements = DatabaseHelper._split_sql_script(sql)
+        with PgDatabase() as db:
+            for statement in statements:
+                db.cursor.execute(statement)
+            if commit:
+                db.connection.commit()
+
+    @staticmethod
+    def apply_migrations() -> None:
+        skip = {"003_drop_images_interests.sql"}
+        migrations_dir = DatabaseHelper._migrations_dir()
+        for filename in sorted(os.listdir(migrations_dir)):
+            if not filename.endswith(".sql") or filename in skip:
+                continue
+            path = os.path.join(migrations_dir, filename)
+            with open(path, encoding="utf-8") as file:
+                DatabaseHelper.run_sql_script(file.read())
+
+    @staticmethod
     def create_tables():
         interest_columns = DatabaseHelper.get_table_data("interest.json")
         user_interest_columns = DatabaseHelper.get_table_data("user_interest.json")
@@ -166,3 +200,4 @@ class DatabaseHelper:
         DatabaseHelper.create_table("chat_messages", chat_messages)
         DatabaseHelper.create_table("notifications", notifications)
         DatabaseHelper.create_table("date_proposals", date_proposals)
+        DatabaseHelper.apply_migrations()

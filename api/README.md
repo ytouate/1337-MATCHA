@@ -81,6 +81,7 @@ SELECT COUNT(*) FROM users WHERE is_profile_completed = true;
 | -------------------------- | ---------------------------------------------------- |
 | `make backend`             | Start Docker Compose stack                           |
 | `make create-tables`       | Create tables from JSON models                       |
+| `make migrate`             | Apply incremental SQL migrations to an existing DB   |
 | `make seed-interests`      | Insert default interest tags                         |
 | `make seed-profiles`       | Insert 500 evaluation profiles (idempotent)          |
 | `make seed-profiles-force` | Delete and re-insert seed profiles                   |
@@ -91,11 +92,8 @@ SELECT COUNT(*) FROM users WHERE is_profile_completed = true;
 
 ## Migrations
 
-Incremental SQL files live in `migrations/`. Apply manually when upgrading an existing database:
+Incremental SQL files live in `migrations/`. `make create-tables` applies them automatically on fresh installs. For an existing database:
 
 ```bash
-make psql
-\i migrations/004_location_label.sql
+make migrate
 ```
-
-Fresh installs typically only need `make create-tables`.
